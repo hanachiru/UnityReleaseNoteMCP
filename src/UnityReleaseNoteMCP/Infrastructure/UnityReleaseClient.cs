@@ -1,50 +1,60 @@
+using System;
+using System.Collections.Generic;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Caching.Memory;
 using UnityReleaseNoteMCP.Application;
 using UnityReleaseNoteMCP.Domain;
-using Microsoft.Extensions.Logging;
 
 namespace UnityReleaseNoteMCP.Infrastructure;
 
 public class UnityReleaseClient : IUnityReleaseClient
 {
     private readonly HttpClient _httpClient;
-
+    private readonly IMemoryCache _cache;
+    private const string AllReleasesCacheKey = "AllReleases";
     private const string UnityReleaseApiUrl = "https://services.api.unity.com/unity/editor/release/v1/releases";
 
-    public UnityReleaseClient(HttpClient httpClient)
+    public UnityReleaseClient(HttpClient httpClient, IMemoryCache cache)
     {
         _httpClient = httpClient;
+        _cache = cache;
         _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("curl/8.5.0");
         _httpClient.DefaultRequestHeaders.Accept.ParseAdd("*/*");
     }
 
     public async Task<ApiReleasesResponse?> GetReleasesAsync(CancellationToken cancellationToken = default)
     {
-        try
+        return await _cache.GetOrCreateAsync(AllReleasesCacheKey, async entry =>
         {
-            var url = $"{UnityReleaseApiUrl}?limit=25&offset=0";
-            var response = await _httpClient.GetAsync(url, cancellationToken);
-            response.EnsureSuccessStatusCode();
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
 
-            var jsonString = await response.Content.ReadAsStringAsync(cancellationToken);
+            var allReleases = new List<ReleaseInfo>();
+            var offset = 0;
+            const int limit = 25;
+            int total;
 
-            var serializerOptions = new JsonSerializerOptions
+            do
             {
-                PropertyNameCaseInsensitive = true
+                var url = $"{UnityReleaseApiUrl}?limit={limit}&offset={offset}";
+                var response = await _httpClient.GetFromJsonAsync<ApiReleasesResponse>(url, cancellationToken);
+
+                if (response?.Results == null) break;
+
+                allReleases.AddRange(response.Results);
+                total = response.Total;
+                offset += limit;
+
+            } while (allReleases.Count < total);
+
+            return new ApiReleasesResponse
+            {
+                Results = allReleases,
+                Total = allReleases.Count
             };
-            return JsonSerializer.Deserialize<ApiReleasesResponse>(jsonString, serializerOptions);
-        }
-        catch (HttpRequestException e)
-        {
-            Console.WriteLine($"Error fetching release data from {UnityReleaseApiUrl}. Status Code: {e.StatusCode}. Message: {e.Message}");
-            return null;
-        }
-        catch (JsonException e)
-        {
-            Console.WriteLine($"Error deserializing release data from {UnityReleaseApiUrl}. Message: {e.Message}");
-            return null;
-        }
+        });
     }
 
     public async Task<ReleaseInfo?> GetReleaseByVersionAsync(string version, CancellationToken cancellationToken = default)
@@ -55,16 +65,9 @@ public class UnityReleaseClient : IUnityReleaseClient
             var releaseInfo = await _httpClient.GetFromJsonAsync<ReleaseInfo>(url, cancellationToken);
             return releaseInfo;
         }
-        catch (HttpRequestException e)
+        catch (HttpRequestException)
         {
-            // This is expected if the version doesn't exist (404 Not Found)
-            Console.WriteLine($"Error fetching release data for version {version} from {url}. Status Code: {e.StatusCode}.");
-            return null;
-        }
-        catch (JsonException e)
-        {
-            Console.WriteLine($"Error deserializing release data for version {version} from {url}. Message: {e.Message}");
-            return null;
+            return null; // Expected if not found
         }
     }
 
@@ -74,10 +77,9 @@ public class UnityReleaseClient : IUnityReleaseClient
         {
             return await _httpClient.GetStringAsync(url, cancellationToken);
         }
-        catch (HttpRequestException e)
+        catch (HttpRequestException)
         {
-            Console.WriteLine($"Error fetching page content from {url}. Message: {e.Message}");
-            return string.Empty; // Return empty string on failure
+            return string.Empty;
         }
     }
 }

@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http;
 using UnityReleaseNoteMCP.Application;
 using UnityReleaseNoteMCP.Domain;
+using Microsoft.Extensions.Caching.Memory;
 using UnityReleaseNoteMCP.Infrastructure;
 
 public class Cli
@@ -27,12 +28,12 @@ public class Cli
 public class Commands
 {
     [Command("releases", Description = "Gets a list of available Unity Editor releases.")]
-    public async Task GetReleases([FromService] UnityReleaseTool tool, [Option('t', Description = "The type of release ('official' or 'beta')")] string type = "official")
+    public async Task GetReleases([FromService] UnityReleaseTool tool, [Option('t', Description = "The type of release ('Official' or 'Beta')")] ReleaseType type = ReleaseType.Official)
     {
         try
         {
             var listResult = await tool.GetUnityReleases(type);
-            Console.WriteLine($"--- Unity {char.ToUpper(listResult.ReleaseType[0]) + listResult.ReleaseType.Substring(1)} Releases ---");
+            Console.WriteLine($"--- Unity {listResult.ReleaseType} Releases ---");
             foreach (var version in listResult.Versions)
             {
                 Console.WriteLine($"- {version}");
@@ -63,7 +64,7 @@ public class Commands
     }
 
     [Command("latest-notes", Description = "Gets the latest Unity Editor release notes.")]
-    public async Task GetLatestNotes([FromService] UnityReleaseTool tool, [Option('t', Description = "The type of release ('official' or 'beta')")] string type = "official")
+    public async Task GetLatestNotes([FromService] UnityReleaseTool tool, [Option('t', Description = "The type of release ('Official' or 'Beta')")] ReleaseType type = ReleaseType.Official)
     {
         try
         {
