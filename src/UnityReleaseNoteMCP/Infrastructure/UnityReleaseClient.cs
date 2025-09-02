@@ -11,10 +11,7 @@ public class UnityReleaseClient : IUnityReleaseClient
     private readonly HttpClient _httpClient;
     private readonly ILogger<UnityReleaseClient> _logger;
 
-    // NOTE: The user-specified URL (https://services.docs.unity.com/release/v1/) appears to be a
-    // documentation page that could not be successfully resolved to a direct API endpoint in this environment.
-    // This alternative URL, found during investigation, provides the necessary JSON data for Unity releases.
-    private const string UnityReleaseDataUrl = "https://public-cdn.cloud.unity3d.com/hub/prod/releases-win32.json";
+    private const string UnityReleaseApiUrl = "https://services.api.unity.com/unity/editor/release/v1/releases";
 
     public UnityReleaseClient(HttpClient httpClient, ILogger<UnityReleaseClient> logger)
     {
@@ -22,22 +19,39 @@ public class UnityReleaseClient : IUnityReleaseClient
         _logger = logger;
     }
 
-    public async Task<ReleaseData?> GetReleasesAsync(CancellationToken cancellationToken = default)
+    public async Task<ApiReleasesResponse?> GetReleasesAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            var releaseData = await _httpClient.GetFromJsonAsync<ReleaseData>(UnityReleaseDataUrl, cancellationToken);
-            return releaseData;
+            // The API is paginated, for now we fetch the first 100 results which should be sufficient
+            // to find the latest versions. A more robust implementation could handle pagination.
+            var response = await _httpClient.GetFromJsonAsync<ApiReleasesResponse>(
+                $"{UnityReleaseApiUrl}?limit=100",
+                cancellationToken);
+            return response;
         }
         catch (HttpRequestException e)
         {
-            _logger.LogError(e, "Error fetching release data from {Url}", UnityReleaseDataUrl);
+            _logger.LogError(e, "Error fetching release data from {Url}", UnityReleaseApiUrl);
             return null;
         }
         catch (JsonException e)
         {
-            _logger.LogError(e, "Error deserializing release data from {Url}", UnityReleaseDataUrl);
+            _logger.LogError(e, "Error deserializing release data from {Url}", UnityReleaseApiUrl);
             return null;
+        }
+    }
+
+    public async Task<string> GetPageContentAsync(string url, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _httpClient.GetStringAsync(url, cancellationToken);
+        }
+        catch (HttpRequestException e)
+        {
+            _logger.LogError(e, "Error fetching page content from {Url}", url);
+            return string.Empty; // Return empty string on failure
         }
     }
 }

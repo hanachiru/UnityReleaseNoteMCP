@@ -5,10 +5,16 @@ namespace UnityReleaseNoteMCP.Tests.Mocks;
 
 public class MockUnityReleaseClient : IUnityReleaseClient
 {
-    public ReleaseData? ReleasesToReturn { get; set; }
+    public ApiReleasesResponse? ReleasesToReturn { get; set; }
+    public string PageContentToReturn { get; set; } = string.Empty;
 
-    public Task<ReleaseData?> GetReleasesAsync(CancellationToken cancellationToken = default)
+    public Task<ApiReleasesResponse?> GetReleasesAsync(CancellationToken cancellationToken = default)
     {
         return Task.FromResult(ReleasesToReturn);
+    }
+
+    public Task<string> GetPageContentAsync(string url, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(PageContentToReturn);
     }
 }

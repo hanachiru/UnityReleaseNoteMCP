@@ -2,13 +2,13 @@ using System.Text.Json.Serialization;
 
 namespace UnityReleaseNoteMCP.Domain;
 
-public class ReleaseData
+public class ApiReleasesResponse
 {
-    [JsonPropertyName("official")]
-    public List<ReleaseInfo> Official { get; set; } = new();
+    [JsonPropertyName("total")]
+    public int Total { get; set; }
 
-    [JsonPropertyName("beta")]
-    public List<ReleaseInfo> Beta { get; set; } = new();
+    [JsonPropertyName("results")]
+    public List<ReleaseInfo> Results { get; set; } = new();
 }
 
 public class ReleaseInfo
@@ -16,45 +16,10 @@ public class ReleaseInfo
     [JsonPropertyName("version")]
     public string Version { get; set; } = string.Empty;
 
-    [JsonPropertyName("lts")]
-    public bool Lts { get; set; }
+    [JsonPropertyName("releaseDate")]
+    public DateTime ReleaseDate { get; set; }
 
-    [JsonPropertyName("downloadUrl")]
-    public string DownloadUrl { get; set; } = string.Empty;
-
-    [JsonPropertyName("downloadSize")]
-    public long DownloadSize { get; set; }
-
-    [JsonPropertyName("installedSize")]
-    public long InstalledSize { get; set; }
-
-    [JsonPropertyName("checksum")]
-    public string Checksum { get; set; } = string.Empty;
-
-    [JsonPropertyName("modules")]
-    public List<Module> Modules { get; set; } = new();
-}
-
-public class Module
-{
-    [JsonPropertyName("id")]
-    public string Id { get; set; } = string.Empty;
-
-    [JsonPropertyName("name")]
-    public string Name { get; set; } = string.Empty;
-
-    [JsonPropertyName("description")]
-    public string Description { get; set; } = string.Empty;
-
-    [JsonPropertyName("downloadUrl")]
-    public string DownloadUrl { get; set; } = string.Empty;
-
-    [JsonPropertyName("category")]
-    public string Category { get; set; } = string.Empty;
-
-    [JsonPropertyName("visible")]
-    public bool? Visible { get; set; }
-
-    [JsonPropertyName("selected")]
-    public bool? Selected { get; set; }
+    // The official API does not seem to provide LTS or release type info directly.
+    // We can infer the type (e.g. 'f' for official, 'b' for beta, 'a' for alpha) from the version string.
+    public bool IsOfficial => Version.Contains("f");
 }

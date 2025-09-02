@@ -4,5 +4,6 @@ namespace UnityReleaseNoteMCP.Application;
 
 public interface IUnityReleaseClient
 {
-    Task<ReleaseData?> GetReleasesAsync(CancellationToken cancellationToken = default);
+    Task<ApiReleasesResponse?> GetReleasesAsync(CancellationToken cancellationToken = default);
+    Task<string> GetPageContentAsync(string url, CancellationToken cancellationToken = default);
 }

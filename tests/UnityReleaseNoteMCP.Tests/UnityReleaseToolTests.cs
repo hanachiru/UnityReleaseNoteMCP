@@ -19,12 +19,17 @@ public class UnityReleaseToolTests
         _tool = new UnityReleaseTool(_mockClient);
     }
 
-    private ReleaseData CreateTestData()
+    private ApiReleasesResponse CreateTestData()
     {
-        return new ReleaseData
+        return new ApiReleasesResponse
         {
-            Official = [new ReleaseInfo { Version = "2022.3.5f1", Lts = true }],
-            Beta = [new ReleaseInfo { Version = "2023.2.0b1" }]
+            Results =
+            [
+                new ReleaseInfo { Version = "2022.3.5f1" }, // Official
+                new ReleaseInfo { Version = "2023.1.0a20" }, // Beta
+                new ReleaseInfo { Version = "2023.2.0b1" }, // Beta, newer
+                new ReleaseInfo { Version = "2022.3.10f1" } // Official, newer
+            ]
         };
     }
 
@@ -39,8 +44,9 @@ public class UnityReleaseToolTests
 
         // Assert
         Assert.That(result, Does.Contain("--- Unity Official Releases ---"));
-        Assert.That(result, Does.Contain("- 2022.3.5f1 (LTS)"));
-        Assert.That(result, Does.Not.Contain("Beta"));
+        Assert.That(result, Does.Contain("- 2022.3.5f1"));
+        Assert.That(result, Does.Contain("- 2022.3.10f1"));
+        Assert.That(result, Does.Not.Contain("b1"));
     }
 
     [Test]
@@ -54,24 +60,9 @@ public class UnityReleaseToolTests
 
         // Assert
         Assert.That(result, Does.Contain("--- Unity Beta Releases ---"));
+        Assert.That(result, Does.Contain("- 2023.1.0a20"));
         Assert.That(result, Does.Contain("- 2023.2.0b1"));
-        Assert.That(result, Does.Not.Contain("Official"));
-    }
-
-    [Test]
-    public async Task GetUnityReleases_All_ReturnsAllReleases()
-    {
-        // Arrange
-        _mockClient.ReleasesToReturn = CreateTestData();
-
-        // Act
-        var result = await _tool.GetUnityReleases("all");
-
-        // Assert
-        Assert.That(result, Does.Contain("--- Unity Official Releases ---"));
-        Assert.That(result, Does.Contain("- 2022.3.5f1 (LTS)"));
-        Assert.That(result, Does.Contain("--- Unity Beta Releases ---"));
-        Assert.That(result, Does.Contain("- 2023.2.0b1"));
+        Assert.That(result, Does.Not.Contain("f1"));
     }
 
     [Test]
@@ -84,19 +75,69 @@ public class UnityReleaseToolTests
         var result = await _tool.GetUnityReleases("official");
 
         // Assert
-        Assert.That(result, Is.EqualTo("Failed to retrieve release data."));
+        Assert.That(result, Is.EqualTo("Failed to retrieve release data or no releases found."));
+    }
+
+    // --- Tests for GetLatestReleaseNotes ---
+
+    [Test]
+    public async Task GetLatestReleaseNotes_Official_FindsLatestAndReturnsSummary()
+    {
+        // Arrange
+        _mockClient.ReleasesToReturn = CreateTestData();
+        _mockClient.PageContentToReturn = "<html><body><h1>Hello Unity 2022.3.10f1</h1></body></html>";
+
+        // Act
+        var result = await _tool.GetLatestReleaseNotes("official");
+
+        // Assert
+        Assert.That(result, Does.Contain("Latest official version: 2022.3.10f1"));
+        Assert.That(result, Does.Contain("https://unity.com/releases/editor/whats-new/2022.3.10f1"));
+        Assert.That(result, Does.Contain("Hello Unity"));
     }
 
     [Test]
-    public async Task GetUnityReleases_NoMatchingReleases_ReturnsNotFoundMessage()
+    public async Task GetLatestReleaseNotes_Beta_FindsLatestAndReturnsSummary()
     {
         // Arrange
-        _mockClient.ReleasesToReturn = new ReleaseData(); // Empty data
+        _mockClient.ReleasesToReturn = CreateTestData();
+        _mockClient.PageContentToReturn = "<html><body><h1>Hello Unity 2023.2.0b1</h1></body></html>";
 
         // Act
-        var result = await _tool.GetUnityReleases("official");
+        var result = await _tool.GetLatestReleaseNotes("beta");
 
         // Assert
-        Assert.That(result, Does.Contain("No releases found for type 'official'"));
+        Assert.That(result, Does.Contain("Latest beta version: 2023.2.0b1"));
+        Assert.That(result, Does.Contain("https://unity.com/releases/editor/whats-new/2023.2.0b1"));
+        Assert.That(result, Does.Contain("Hello Unity"));
+    }
+
+    [Test]
+    public async Task GetLatestReleaseNotes_ApiFailure_ReturnsErrorMessage()
+    {
+        // Arrange
+        _mockClient.ReleasesToReturn = null;
+
+        // Act
+        var result = await _tool.GetLatestReleaseNotes();
+
+        // Assert
+        Assert.That(result, Is.EqualTo("Failed to retrieve release data or no releases found."));
+    }
+
+    [Test]
+    public async Task GetLatestReleaseNotes_NoMatchingReleases_ReturnsNotFoundMessage()
+    {
+        // Arrange
+        _mockClient.ReleasesToReturn = new ApiReleasesResponse
+        {
+            Results = [new ReleaseInfo { Version = "2023.1.0a20" }] // Only beta
+        };
+
+        // Act
+        var result = await _tool.GetLatestReleaseNotes("official");
+
+        // Assert
+        Assert.That(result, Is.EqualTo("No official releases found to determine the latest."));
     }
 }
