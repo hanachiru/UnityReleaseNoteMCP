@@ -140,4 +140,30 @@ public class UnityReleaseTool
             Summary = $"{summary}..."
         };
     }
+
+    [McpServerTool, Description("Gets a list of Unity Editor releases for a specific major or minor version stream.")]
+    public async Task<ReleaseListResult> GetReleasesByStream(string stream)
+    {
+        var apiResponse = await _unityReleaseClient.GetReleasesAsync();
+        if (apiResponse?.Results == null || !apiResponse.Results.Any())
+        {
+            throw new ToolExecutionException("Failed to retrieve release data or no releases found.");
+        }
+
+        var releases = apiResponse.Results
+            .Where(r => r.Version.StartsWith(stream))
+            .Select(r => r.Version)
+            .ToList();
+
+        if (!releases.Any())
+        {
+            throw new ToolExecutionException($"No releases found for stream '{stream}'.");
+        }
+
+        return new ReleaseListResult
+        {
+            ReleaseType = $"Stream: {stream}",
+            Versions = releases
+        };
+    }
 }

@@ -144,4 +144,20 @@ public class UnityReleaseToolTests
         var ex = Assert.ThrowsAsync<ToolExecutionException>(async () => await _tool.GetReleaseNotesByVersion(version));
         Assert.That(ex.Message, Does.Contain("Could not find release information"));
     }
+
+    [Test]
+    public async Task GetReleasesByStream_WhenStreamExists_ReturnsMatchingReleases()
+    {
+        // Arrange
+        _mockClient.ReleasesToReturn = CreateTestData();
+        var stream = "2022.3";
+
+        // Act
+        var result = await _tool.GetReleasesByStream(stream);
+
+        // Assert
+        Assert.That(result.Versions, Has.Count.EqualTo(2));
+        Assert.That(result.Versions, Contains.Item("2022.3.5f1"));
+        Assert.That(result.Versions, Contains.Item("2022.3.10f1"));
+    }
 }

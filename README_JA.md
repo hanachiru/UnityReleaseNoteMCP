@@ -45,6 +45,13 @@
 -   `string Summary`: リリースノート内容の簡単な要約。
 -   `string ReleaseType`: リリースの種類。
 
+### `GetReleasesByStream(stream)`
+
+特定のメジャーまたはマイナーバージョンストリームに属するリリースの一覧を取得します。
+
+-   **`stream` (string)**: フィルタリングするための部分的なバージョン文字列（例: `"2022.3"`）。
+-   **戻り値**: `Task<ReleaseListResult>`
+
 ## 開発
 
 ### アーキテクチャ

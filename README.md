@@ -45,6 +45,13 @@ A `ReleaseNotesResult` object contains:
 -   `string Summary`: A brief summary of the release notes content.
 -   `string ReleaseType`: The type of release.
 
+### `GetReleasesByStream(stream)`
+
+Retrieves a list of releases that belong to a specific major or minor version stream.
+
+-   **`stream` (string)**: The partial version string to filter by (e.g., `"2022.3"`).
+-   **Returns**: `Task<ReleaseListResult>`
+
 ## Development
 
 ### Architecture

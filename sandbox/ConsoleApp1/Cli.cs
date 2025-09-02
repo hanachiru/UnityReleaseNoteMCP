@@ -44,6 +44,24 @@ public class Commands
         }
     }
 
+    [Command("releases-by-stream", Description = "Gets a list of Unity releases for a specific stream (e.g., '2022.3').")]
+    public async Task GetReleasesByStream([FromService] UnityReleaseTool tool, [Argument] string stream)
+    {
+        try
+        {
+            var listResult = await tool.GetReleasesByStream(stream);
+            Console.WriteLine($"--- Unity Releases for Stream: {stream} ---");
+            foreach (var version in listResult.Versions)
+            {
+                Console.WriteLine($"- {version}");
+            }
+        }
+        catch (ToolExecutionException ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+    }
+
     [Command("latest-notes", Description = "Gets the latest Unity Editor release notes.")]
     public async Task GetLatestNotes([FromService] UnityReleaseTool tool, [Option('t', Description = "The type of release ('official' or 'beta')")] string type = "official")
     {
