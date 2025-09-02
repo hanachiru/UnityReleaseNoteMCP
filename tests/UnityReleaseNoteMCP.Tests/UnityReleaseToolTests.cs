@@ -43,11 +43,9 @@ public class UnityReleaseToolTests
         _mockClient.ReleasesToReturn = CreateTestData();
 
         // Act
-        var result = await _tool.GetUnityReleases("official");
+        var listResult = await _tool.GetUnityReleases("official");
 
         // Assert
-        Assert.That(result, Is.InstanceOf<ReleaseListResult>());
-        var listResult = (ReleaseListResult)result;
         Assert.That(listResult.ReleaseType, Is.EqualTo("official"));
         Assert.That(listResult.Versions, Contains.Item("2022.3.5f1"));
         Assert.That(listResult.Versions, Contains.Item("2022.3.10f1"));
@@ -61,11 +59,9 @@ public class UnityReleaseToolTests
         _mockClient.ReleasesToReturn = CreateTestData();
 
         // Act
-        var result = await _tool.GetUnityReleases("beta");
+        var listResult = await _tool.GetUnityReleases("beta");
 
         // Assert
-        Assert.That(result, Is.InstanceOf<ReleaseListResult>());
-        var listResult = (ReleaseListResult)result;
         Assert.That(listResult.ReleaseType, Is.EqualTo("beta"));
         Assert.That(listResult.Versions, Contains.Item("2023.1.0a20"));
         Assert.That(listResult.Versions, Contains.Item("2023.2.0b1"));
@@ -73,18 +69,14 @@ public class UnityReleaseToolTests
     }
 
     [Test]
-    public async Task GetUnityReleases_ApiFailure_ReturnsErrorResult()
+    public void GetUnityReleases_ApiFailure_ThrowsException()
     {
         // Arrange
         _mockClient.ReleasesToReturn = null;
 
-        // Act
-        var result = await _tool.GetUnityReleases("official");
-
-        // Assert
-        Assert.That(result, Is.InstanceOf<ErrorResult>());
-        var errorResult = (ErrorResult)result;
-        Assert.That(errorResult.Message, Is.EqualTo("Failed to retrieve release data or no releases found."));
+        // Act & Assert
+        var ex = Assert.ThrowsAsync<ToolExecutionException>(async () => await _tool.GetUnityReleases("official"));
+        Assert.That(ex.Message, Is.EqualTo("Failed to retrieve release data or no releases found."));
     }
 
     [Test]
@@ -94,33 +86,27 @@ public class UnityReleaseToolTests
         _mockClient.ReleasesToReturn = CreateTestData();
 
         // Act
-        var result = await _tool.GetLatestReleaseNotes("official");
+        var notesResult = await _tool.GetLatestReleaseNotes("official");
 
         // Assert
-        Assert.That(result, Is.InstanceOf<ReleaseNotesResult>());
-        var notesResult = (ReleaseNotesResult)result;
         Assert.That(notesResult.Version, Is.EqualTo("2022.3.10f1"));
         Assert.That(notesResult.Url, Is.EqualTo("https://unity.com/releases/editor/whats-new/2022.3.10f1"));
         Assert.That(notesResult.Summary, Does.StartWith("<html>"));
     }
 
     [Test]
-    public async Task GetLatestReleaseNotes_ApiFailure_ReturnsErrorResult()
+    public void GetLatestReleaseNotes_ApiFailure_ThrowsException()
     {
         // Arrange
         _mockClient.ReleasesToReturn = null;
 
-        // Act
-        var result = await _tool.GetLatestReleaseNotes();
-
-        // Assert
-        Assert.That(result, Is.InstanceOf<ErrorResult>());
-        var errorResult = (ErrorResult)result;
-        Assert.That(errorResult.Message, Is.EqualTo("Failed to retrieve release data or no releases found."));
+        // Act & Assert
+        var ex = Assert.ThrowsAsync<ToolExecutionException>(async () => await _tool.GetLatestReleaseNotes());
+        Assert.That(ex.Message, Is.EqualTo("Failed to retrieve release data or no releases found."));
     }
 
     [Test]
-    public async Task GetLatestReleaseNotes_NoMatchingReleases_ReturnsErrorResult()
+    public void GetLatestReleaseNotes_NoMatchingReleases_ThrowsException()
     {
         // Arrange
         _mockClient.ReleasesToReturn = new ApiReleasesResponse
@@ -128,13 +114,9 @@ public class UnityReleaseToolTests
             Results = [new ReleaseInfo { Version = "2023.1.0a20" }] // Only beta
         };
 
-        // Act
-        var result = await _tool.GetLatestReleaseNotes("official");
-
-        // Assert
-        Assert.That(result, Is.InstanceOf<ErrorResult>());
-        var errorResult = (ErrorResult)result;
-        Assert.That(errorResult.Message, Is.EqualTo("No official releases found to determine the latest."));
+        // Act & Assert
+        var ex = Assert.ThrowsAsync<ToolExecutionException>(async () => await _tool.GetLatestReleaseNotes("official"));
+        Assert.That(ex.Message, Is.EqualTo("No official releases found to determine the latest."));
     }
 
     [Test]
@@ -144,28 +126,22 @@ public class UnityReleaseToolTests
         var version = "2022.3.8f1";
 
         // Act
-        var result = await _tool.GetReleaseNotesByVersion(version);
+        var notesResult = await _tool.GetReleaseNotesByVersion(version);
 
         // Assert
-        Assert.That(result, Is.InstanceOf<ReleaseNotesResult>());
-        var notesResult = (ReleaseNotesResult)result;
         Assert.That(notesResult.Version, Is.EqualTo(version));
         Assert.That(notesResult.Url, Does.Contain(version));
         Assert.That(notesResult.Summary, Does.StartWith("<html>"));
     }
 
     [Test]
-    public async Task GetReleaseNotesByVersion_WhenVersionDoesNotExist_ReturnsErrorResult()
+    public void GetReleaseNotesByVersion_WhenVersionDoesNotExist_ThrowsException()
     {
         // Arrange
         var version = "non-existent-version";
 
-        // Act
-        var result = await _tool.GetReleaseNotesByVersion(version);
-
-        // Assert
-        Assert.That(result, Is.InstanceOf<ErrorResult>());
-        var errorResult = (ErrorResult)result;
-        Assert.That(errorResult.Message, Does.Contain("Could not find release information"));
+        // Act & Assert
+        var ex = Assert.ThrowsAsync<ToolExecutionException>(async () => await _tool.GetReleaseNotesByVersion(version));
+        Assert.That(ex.Message, Does.Contain("Could not find release information"));
     }
 }

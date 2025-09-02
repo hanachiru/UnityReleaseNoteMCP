@@ -1,14 +1,6 @@
 namespace UnityReleaseNoteMCP.Domain;
 
 /// <summary>
-/// Represents a generic error result from a tool method.
-/// </summary>
-public class ErrorResult
-{
-    public string Message { get; set; } = string.Empty;
-}
-
-/// <summary>
 /// Represents the successful result of fetching a list of releases.
 /// </summary>
 public class ReleaseListResult

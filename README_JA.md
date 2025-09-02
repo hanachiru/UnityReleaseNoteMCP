@@ -12,56 +12,38 @@
 
 ## 使用方法
 
-このサーバーは、MCPクライアントから呼び出すことができる以下のメソッドを持つ `UnityReleaseTool` を公開しています。
+このサーバーは、MCPクライアントから呼び出すことができる以下のメソッドを持つ `UnityReleaseTool` を公開しています。失敗した場合、すべてのメソッドは `ToolExecutionException` をスローします。
 
 ### `GetUnityReleases(releaseType)`
 
 利用可能なUnityエディターのリリース一覧を取得します。
 
--   **`releaseType` (string)**: 一覧表示するリリースの種類。
-    -   `"official"` (デフォルト): 公式の`f`シリーズのリリースを一覧表示します。
-    -   `"beta"`: ベータ版の`b`シリーズおよびアルファ版の`a`シリーズのリリースを一覧表示します。
+-   **`releaseType` (string)**: 一覧表示するリリースの種類。`"official"` (デフォルト) または `"beta"` を指定できます。
+-   **戻り値**: `Task<ReleaseListResult>`
 
-**レスポンス例:**
-
-```
---- Unity Official Releases ---
-- 2022.3.10f1
-- 2022.3.5f1
-```
+`ReleaseListResult` オブジェクトの内容:
+-   `string ReleaseType`: 要求されたリリースの種類。
+-   `List<string> Versions`: バージョン文字列のリスト。
 
 ### `GetLatestReleaseNotes(releaseType)`
 
-指定された種類の最新リリースを見つけ、そのリリースノートの要約を返します。
+指定された種類の最新リリースを見つけ、そのリリースノートを返します。
 
--   **`releaseType` (string)**: 最新を検索するリリースの種類。
-    -   `"official"` (デフォルト): 最新の公式リリースを検索します。
-    -   `"beta"`: 最新のベータ版/アルファ版リリースを検索します。
-
-**レスポンス例:**
-
-```
-Latest official version: 2022.3.10f1
-Release Notes URL: https://unity.com/releases/editor/whats-new/2022.3.10f1
-
-Release Notes Summary:
-<html><body><h1>Hello Unity 2022.3.10f1</h1></body></html>...
-```
+-   **`releaseType` (string)**: 検索するリリースの種類。`"official"` (デフォルト) または `"beta"` を指定できます。
+-   **戻り値**: `Task<ReleaseNotesResult>`
 
 ### `GetReleaseNotesByVersion(version)`
 
 完全なバージョン文字列を指定して、特定のリリースノートを取得します。
 
 -   **`version` (string)**: 検索する完全なバージョン文字列（例: `"2022.3.8f1"`）。
+-   **戻り値**: `Task<ReleaseNotesResult>`
 
-**レスポンス例:**
-```
-Release Notes for 2022.3.8f1:
-URL: https://unity.com/releases/editor/whats-new/2022.3.8f1
-
-Summary:
-<html><body>Mocked release notes content.</body></html>...
-```
+`ReleaseNotesResult` オブジェクトの内容:
+-   `string Version`: バージョン番号。
+-   `string Url`: 完全なリリースノートへのURL。
+-   `string Summary`: リリースノート内容の簡単な要約。
+-   `string ReleaseType`: リリースの種類。
 
 ## 開発
 

@@ -12,56 +12,38 @@ This project is a C# MCP (Model Context Protocol) server designed to fetch and p
 
 ## Usage
 
-The server exposes a `UnityReleaseTool` with the following methods that can be called by an MCP client:
+The server exposes a `UnityReleaseTool` with the following methods that can be called by an MCP client. On failure, all methods throw a `ToolExecutionException`.
 
 ### `GetUnityReleases(releaseType)`
 
 Retrieves a list of available Unity Editor releases.
 
--   **`releaseType` (string)**: The type of releases to list.
-    -   `"official"` (default): Lists official `f`-series releases.
-    -   `"beta"`: Lists beta `b`-series and alpha `a`-series releases.
+-   **`releaseType` (string)**: The type of releases to list. Can be `"official"` (default) or `"beta"`.
+-   **Returns**: `Task<ReleaseListResult>`
 
-**Example Response:**
-
-```
---- Unity Official Releases ---
-- 2022.3.10f1
-- 2022.3.5f1
-```
+A `ReleaseListResult` object contains:
+-   `string ReleaseType`: The type of release requested.
+-   `List<string> Versions`: A list of version strings.
 
 ### `GetLatestReleaseNotes(releaseType)`
 
-Finds the latest release of a specific type and returns a summary of its release notes.
+Finds the latest release of a specific type and returns its release notes.
 
--   **`releaseType` (string)**: The type of release to find the latest of.
-    -   `"official"` (default): Finds the latest official release.
-    -   `"beta"`: Finds the latest beta/alpha release.
-
-**Example Response:**
-
-```
-Latest official version: 2022.3.10f1
-Release Notes URL: https://unity.com/releases/editor/whats-new/2022.3.10f1
-
-Release Notes Summary:
-<html><body><h1>Hello Unity 2022.3.10f1</h1></body></html>...
-```
+-   **`releaseType` (string)**: The type of release to find. Can be `"official"` (default) or `"beta"`.
+-   **Returns**: `Task<ReleaseNotesResult>`
 
 ### `GetReleaseNotesByVersion(version)`
 
 Fetches the release notes for a specific, full version string.
 
 -   **`version` (string)**: The full version string to look up (e.g., `"2022.3.8f1"`).
+-   **Returns**: `Task<ReleaseNotesResult>`
 
-**Example Response:**
-```
-Release Notes for 2022.3.8f1:
-URL: https://unity.com/releases/editor/whats-new/2022.3.8f1
-
-Summary:
-<html><body>Mocked release notes content.</body></html>...
-```
+A `ReleaseNotesResult` object contains:
+-   `string Version`: The version number.
+-   `string Url`: The URL to the full release notes.
+-   `string Summary`: A brief summary of the release notes content.
+-   `string ReleaseType`: The type of release.
 
 ## Development
 

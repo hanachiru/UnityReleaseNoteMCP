@@ -21,12 +21,12 @@ public class UnityReleaseTool
     }
 
     [McpServerTool, Description("Gets a list of available Unity Editor releases. Specify 'official' or 'beta' as the release type.")]
-    public async Task<object> GetUnityReleases(string releaseType = "official")
+    public async Task<ReleaseListResult> GetUnityReleases(string releaseType = "official")
     {
         var apiResponse = await _unityReleaseClient.GetReleasesAsync();
         if (apiResponse?.Results == null || !apiResponse.Results.Any())
         {
-            return new ErrorResult { Message = "Failed to retrieve release data or no releases found." };
+            throw new ToolExecutionException("Failed to retrieve release data or no releases found.");
         }
 
         var releases = releaseType.ToLower() switch
@@ -37,7 +37,7 @@ public class UnityReleaseTool
 
         if (!releases.Any())
         {
-            return new ErrorResult { Message = $"No {releaseType} releases found." };
+            throw new ToolExecutionException($"No {releaseType} releases found.");
         }
 
         return new ReleaseListResult
@@ -48,12 +48,12 @@ public class UnityReleaseTool
     }
 
     [McpServerTool, Description("Gets the latest Unity Editor release notes. Specify 'official' or 'beta' as the release type.")]
-    public async Task<object> GetLatestReleaseNotes(string releaseType = "official")
+    public async Task<ReleaseNotesResult> GetLatestReleaseNotes(string releaseType = "official")
     {
         var apiResponse = await _unityReleaseClient.GetReleasesAsync();
         if (apiResponse?.Results == null || !apiResponse.Results.Any())
         {
-            return new ErrorResult { Message = "Failed to retrieve release data or no releases found." };
+            throw new ToolExecutionException("Failed to retrieve release data or no releases found.");
         }
 
         var releases = releaseType.ToLower() switch
@@ -64,7 +64,7 @@ public class UnityReleaseTool
 
         if (!releases.Any())
         {
-            return new ErrorResult { Message = $"No {releaseType} releases found to determine the latest." };
+            throw new ToolExecutionException($"No {releaseType} releases found to determine the latest.");
         }
 
         var latestRelease = releases
@@ -75,7 +75,7 @@ public class UnityReleaseTool
 
         if (latestRelease == null)
         {
-            return new ErrorResult { Message = "Could not determine the latest release version." };
+            throw new ToolExecutionException("Could not determine the latest release version.");
         }
 
         var releaseNotesUrl = string.Format(ReleaseNotesUrlFormat, latestRelease.OriginalVersion);
@@ -83,7 +83,7 @@ public class UnityReleaseTool
 
         if (string.IsNullOrWhiteSpace(pageContent))
         {
-            return new ErrorResult { Message = $"Found latest version {latestRelease.OriginalVersion}, but could not retrieve release notes from {releaseNotesUrl}" };
+            throw new ToolExecutionException($"Found latest version {latestRelease.OriginalVersion}, but could not retrieve release notes from {releaseNotesUrl}");
         }
 
         var summary = new string(pageContent.Take(500).ToArray()).Trim();
@@ -113,13 +113,13 @@ public class UnityReleaseTool
     }
 
     [McpServerTool, Description("Gets the release notes for a specific Unity Editor version.")]
-    public async Task<object> GetReleaseNotesByVersion(string version)
+    public async Task<ReleaseNotesResult> GetReleaseNotesByVersion(string version)
     {
         // First, verify the version exists by calling the API.
         var releaseInfo = await _unityReleaseClient.GetReleaseByVersionAsync(version);
         if (releaseInfo == null)
         {
-            return new ErrorResult { Message = $"Could not find release information for version '{version}'. It may not exist." };
+            throw new ToolExecutionException($"Could not find release information for version '{version}'. It may not exist.");
         }
 
         var releaseNotesUrl = string.Format(ReleaseNotesUrlFormat, version);
@@ -127,7 +127,7 @@ public class UnityReleaseTool
 
         if (string.IsNullOrWhiteSpace(pageContent))
         {
-            return new ErrorResult { Message = $"Found version '{version}' but could not retrieve release notes from URL: {releaseNotesUrl}" };
+            throw new ToolExecutionException($"Found version '{version}' but could not retrieve release notes from URL: {releaseNotesUrl}");
         }
 
         var summary = new string(pageContent.Take(500).ToArray()).Trim();
