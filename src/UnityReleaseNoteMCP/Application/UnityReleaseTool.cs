@@ -21,12 +21,12 @@ public class UnityReleaseTool
     }
 
     [McpServerTool, Description("Gets a list of available Unity Editor releases. Specify 'official' or 'beta' as the release type.")]
-    public async Task<string> GetUnityReleases(string releaseType = "official")
+    public async Task<object> GetUnityReleases(string releaseType = "official")
     {
         var apiResponse = await _unityReleaseClient.GetReleasesAsync();
         if (apiResponse?.Results == null || !apiResponse.Results.Any())
         {
-            return "Failed to retrieve release data or no releases found.";
+            return new ErrorResult { Message = "Failed to retrieve release data or no releases found." };
         }
 
         var releases = releaseType.ToLower() switch
@@ -37,26 +37,23 @@ public class UnityReleaseTool
 
         if (!releases.Any())
         {
-            return $"No {releaseType} releases found.";
+            return new ErrorResult { Message = $"No {releaseType} releases found." };
         }
 
-        var sb = new StringBuilder();
-        sb.AppendLine($"--- Unity {char.ToUpper(releaseType[0]) + releaseType.Substring(1)} Releases ---");
-        foreach (var release in releases)
+        return new ReleaseListResult
         {
-            sb.AppendLine($"- {release.Version}");
-        }
-
-        return sb.ToString();
+            ReleaseType = releaseType,
+            Versions = releases.Select(r => r.Version).ToList()
+        };
     }
 
     [McpServerTool, Description("Gets the latest Unity Editor release notes. Specify 'official' or 'beta' as the release type.")]
-    public async Task<string> GetLatestReleaseNotes(string releaseType = "official")
+    public async Task<object> GetLatestReleaseNotes(string releaseType = "official")
     {
         var apiResponse = await _unityReleaseClient.GetReleasesAsync();
         if (apiResponse?.Results == null || !apiResponse.Results.Any())
         {
-            return "Failed to retrieve release data or no releases found.";
+            return new ErrorResult { Message = "Failed to retrieve release data or no releases found." };
         }
 
         var releases = releaseType.ToLower() switch
@@ -67,7 +64,7 @@ public class UnityReleaseTool
 
         if (!releases.Any())
         {
-            return $"No {releaseType} releases found to determine the latest.";
+            return new ErrorResult { Message = $"No {releaseType} releases found to determine the latest." };
         }
 
         var latestRelease = releases
@@ -78,7 +75,7 @@ public class UnityReleaseTool
 
         if (latestRelease == null)
         {
-            return "Could not determine the latest release version.";
+            return new ErrorResult { Message = "Could not determine the latest release version." };
         }
 
         var releaseNotesUrl = string.Format(ReleaseNotesUrlFormat, latestRelease.OriginalVersion);
@@ -86,19 +83,18 @@ public class UnityReleaseTool
 
         if (string.IsNullOrWhiteSpace(pageContent))
         {
-            return $"Found latest version {latestRelease.OriginalVersion}, but could not retrieve release notes from {releaseNotesUrl}";
+            return new ErrorResult { Message = $"Found latest version {latestRelease.OriginalVersion}, but could not retrieve release notes from {releaseNotesUrl}" };
         }
 
-        // Basic summary: get first 500 chars, clean up whitespace.
         var summary = new string(pageContent.Take(500).ToArray()).Trim();
 
-        return $"""
-               Latest {releaseType} version: {latestRelease.OriginalVersion}
-               Release Notes URL: {releaseNotesUrl}
-
-               Release Notes Summary:
-               {summary}...
-               """;
+        return new ReleaseNotesResult
+        {
+            ReleaseType = releaseType,
+            Version = latestRelease.OriginalVersion,
+            Url = releaseNotesUrl,
+            Summary = $"{summary}..."
+        };
     }
 
     private Version? ParseVersion(string versionString)
@@ -114,5 +110,34 @@ public class UnityReleaseTool
         var parsableVersionString = $"{match.Groups[1].Value}.{match.Groups[3].Value}";
         Version.TryParse(parsableVersionString, out var parsedVersion);
         return parsedVersion;
+    }
+
+    [McpServerTool, Description("Gets the release notes for a specific Unity Editor version.")]
+    public async Task<object> GetReleaseNotesByVersion(string version)
+    {
+        // First, verify the version exists by calling the API.
+        var releaseInfo = await _unityReleaseClient.GetReleaseByVersionAsync(version);
+        if (releaseInfo == null)
+        {
+            return new ErrorResult { Message = $"Could not find release information for version '{version}'. It may not exist." };
+        }
+
+        var releaseNotesUrl = string.Format(ReleaseNotesUrlFormat, version);
+        var pageContent = await _unityReleaseClient.GetPageContentAsync(releaseNotesUrl);
+
+        if (string.IsNullOrWhiteSpace(pageContent))
+        {
+            return new ErrorResult { Message = $"Found version '{version}' but could not retrieve release notes from URL: {releaseNotesUrl}" };
+        }
+
+        var summary = new string(pageContent.Take(500).ToArray()).Trim();
+
+        return new ReleaseNotesResult
+        {
+            ReleaseType = "specific version",
+            Version = version,
+            Url = releaseNotesUrl,
+            Summary = $"{summary}..."
+        };
     }
 }

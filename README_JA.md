@@ -6,6 +6,7 @@
 
 -   **リリース一覧の取得**: Unityエディターの公式版またはベータ版のリリース一覧を取得します。
 -   **最新リリースノートの取得**: 指定されたカテゴリ（公式またはベータ）の最新リリースを特定し、対応するリリースノートのページを取得して概要を提供します。
+-   **バージョン指定によるリリースノート取得**: 特定のバージョン文字列に対応するリリースノートを取得します。
 -   **クリーンアーキテクチャ**: ドメイン、アプリケーション、インフラストラクチャ層に関心を分離する、クリーンアーキテクチャのアプローチで構築されています。
 -   **テスト済み**: 信頼性を確保するため、NUnitによる単体テストスイートが含まれています。
 
@@ -45,6 +46,21 @@ Release Notes URL: https://unity.com/releases/editor/whats-new/2022.3.10f1
 
 Release Notes Summary:
 <html><body><h1>Hello Unity 2022.3.10f1</h1></body></html>...
+```
+
+### `GetReleaseNotesByVersion(version)`
+
+完全なバージョン文字列を指定して、特定のリリースノートを取得します。
+
+-   **`version` (string)**: 検索する完全なバージョン文字列（例: `"2022.3.8f1"`）。
+
+**レスポンス例:**
+```
+Release Notes for 2022.3.8f1:
+URL: https://unity.com/releases/editor/whats-new/2022.3.8f1
+
+Summary:
+<html><body>Mocked release notes content.</body></html>...
 ```
 
 ## 開発

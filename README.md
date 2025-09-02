@@ -6,6 +6,7 @@ This project is a C# MCP (Model Context Protocol) server designed to fetch and p
 
 -   **Fetch Release Lists**: Retrieves a list of official or beta Unity Editor releases.
 -   **Get Latest Release Notes**: Identifies the latest release in a given category (official or beta), fetches the corresponding release notes page, and provides a summary.
+-   **Get Release Notes by Version**: Fetches the release notes for a specific version string.
 -   **Clean Architecture**: Built using a clean architecture approach, separating concerns into Domain, Application, and Infrastructure layers.
 -   **Tested**: Includes a suite of NUnit unit tests to ensure reliability.
 
@@ -45,6 +46,21 @@ Release Notes URL: https://unity.com/releases/editor/whats-new/2022.3.10f1
 
 Release Notes Summary:
 <html><body><h1>Hello Unity 2022.3.10f1</h1></body></html>...
+```
+
+### `GetReleaseNotesByVersion(version)`
+
+Fetches the release notes for a specific, full version string.
+
+-   **`version` (string)**: The full version string to look up (e.g., `"2022.3.8f1"`).
+
+**Example Response:**
+```
+Release Notes for 2022.3.8f1:
+URL: https://unity.com/releases/editor/whats-new/2022.3.8f1
+
+Summary:
+<html><body>Mocked release notes content.</body></html>...
 ```
 
 ## Development

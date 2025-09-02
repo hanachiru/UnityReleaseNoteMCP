@@ -17,4 +17,18 @@ public class MockUnityReleaseClient : IUnityReleaseClient
     {
         return Task.FromResult(PageContentToReturn);
     }
+
+    public Task<ReleaseInfo?> GetReleaseByVersionAsync(string version, CancellationToken cancellationToken = default)
+    {
+        if (version == "2022.3.8f1")
+        {
+            return Task.FromResult<ReleaseInfo?>(new ReleaseInfo
+            {
+                Version = "2022.3.8f1",
+                ReleaseDate = DateTime.UtcNow,
+            });
+        }
+
+        return Task.FromResult<ReleaseInfo?>(null);
+    }
 }
