@@ -1,9 +1,11 @@
 using Cocona;
-using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Net.Http;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection;
 using UnityReleaseNoteMCP.Application;
 using UnityReleaseNoteMCP.Domain;
-using Microsoft.Extensions.Caching.Memory;
 using UnityReleaseNoteMCP.Infrastructure;
 
 public class Cli
@@ -12,11 +14,11 @@ public class Cli
     {
         var builder = CoconaApp.CreateBuilder(args);
 
-        var httpClient = new HttpClient();
-        var releaseClient = new UnityReleaseClient(httpClient);
-        var releaseTool = new UnityReleaseTool(releaseClient);
-
-        builder.Services.AddSingleton(releaseTool);
+        // Set up DI
+        builder.Services.AddHttpClient();
+        builder.Services.AddMemoryCache();
+        builder.Services.AddSingleton<IUnityReleaseClient, UnityReleaseClient>();
+        builder.Services.AddSingleton<UnityReleaseTool>();
 
         var app = builder.Build();
 
@@ -27,16 +29,19 @@ public class Cli
 
 public class Commands
 {
-    [Command("releases", Description = "Gets a list of available Unity Editor releases.")]
-    public async Task GetReleases([FromService] UnityReleaseTool tool, [Option('t', Description = "The type of release ('Official' or 'Beta')")] ReleaseType type = ReleaseType.Official)
+    [Command("releases", Description = "Gets a list of Unity Editor releases, with optional filters.")]
+    public async Task GetReleases(
+        [FromService] UnityReleaseTool tool,
+        [Option('v', Description = "Filter by a full or partial version string (e.g., '2022.3', '2023.1.0a22')")] string? version = null,
+        [Option('s', Description = "Filter by release stream ('LTS', 'BETA', 'ALPHA', 'TECH')")] string? stream = null)
     {
         try
         {
-            var listResult = await tool.GetUnityReleases(type);
-            Console.WriteLine($"--- Unity {listResult.ReleaseType} Releases ---");
-            foreach (var version in listResult.Versions)
+            var releases = await tool.GetReleases(version, stream);
+            Console.WriteLine($"Found {releases.Count} release(s) matching criteria:");
+            foreach (var r in releases)
             {
-                Console.WriteLine($"- {version}");
+                Console.WriteLine($"- {r.Version} ({r.Stream}) released on {r.ReleaseDate:yyyy-MM-dd}");
             }
         }
         catch (ToolExecutionException ex)
@@ -45,51 +50,14 @@ public class Commands
         }
     }
 
-    [Command("releases-by-stream", Description = "Gets a list of Unity releases for a specific stream (e.g., '2022.3').")]
-    public async Task GetReleasesByStream([FromService] UnityReleaseTool tool, [Argument] string stream)
+    [Command("latest-lts-notes-url", Description = "Gets the markdown URL for the latest official LTS release notes.")]
+    public async Task GetLatestLtsNotesUrl([FromService] UnityReleaseTool tool)
     {
         try
         {
-            var listResult = await tool.GetReleasesByStream(stream);
-            Console.WriteLine($"--- Unity Releases for Stream: {stream} ---");
-            foreach (var version in listResult.Versions)
-            {
-                Console.WriteLine($"- {version}");
-            }
-        }
-        catch (ToolExecutionException ex)
-        {
-            Console.WriteLine($"Error: {ex.Message}");
-        }
-    }
-
-    [Command("latest-notes", Description = "Gets the latest Unity Editor release notes.")]
-    public async Task GetLatestNotes([FromService] UnityReleaseTool tool, [Option('t', Description = "The type of release ('Official' or 'Beta')")] ReleaseType type = ReleaseType.Official)
-    {
-        try
-        {
-            var notesResult = await tool.GetLatestReleaseNotes(type);
-            Console.WriteLine($"Latest {notesResult.ReleaseType} version: {notesResult.Version}");
-            Console.WriteLine($"Release Notes URL: {notesResult.Url}");
-            Console.WriteLine("\nRelease Notes Summary:");
-            Console.WriteLine(notesResult.Summary);
-        }
-        catch (ToolExecutionException ex)
-        {
-            Console.WriteLine($"Error: {ex.Message}");
-        }
-    }
-
-    [Command("notes-by-version", Description = "Gets the release notes for a specific Unity Editor version.")]
-    public async Task GetNotesByVersion([FromService] UnityReleaseTool tool, [Argument(Description = "The full version string (e.g., '2022.3.8f1')")] string version)
-    {
-        try
-        {
-            var notesResult = await tool.GetReleaseNotesByVersion(version);
-            Console.WriteLine($"Release Notes for {notesResult.Version}:");
-            Console.WriteLine($"URL: {notesResult.Url}");
-            Console.WriteLine("\nSummary:");
-            Console.WriteLine(notesResult.Summary);
+            var url = await tool.GetLatestLtsReleaseNotesUrl();
+            Console.WriteLine("Latest LTS Release Notes URL:");
+            Console.WriteLine(url);
         }
         catch (ToolExecutionException ex)
         {

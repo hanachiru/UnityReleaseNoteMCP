@@ -1,56 +1,35 @@
 # Unity Release Note MCP Server
 
-This project is a C# MCP (Model Context Protocol) server designed to fetch and provide information about Unity Editor releases.
+This project is a C# MCP (Model Context Protocol) server designed to fetch and provide information about Unity Editor releases, based on the official Unity Release API.
 
 ## Features
 
--   **Fetch Release Lists**: Retrieves a list of official or beta Unity Editor releases.
--   **Get Latest Release Notes**: Identifies the latest release in a given category (official or beta), fetches the corresponding release notes page, and provides a summary.
--   **Get Release Notes by Version**: Fetches the release notes for a specific version string.
--   **Clean Architecture**: Built using a clean architecture approach, separating concerns into Domain, Application, and Infrastructure layers.
--   **Tested**: Includes a suite of NUnit unit tests to ensure reliability.
+-   **Comprehensive Release Data**: Fetches a complete list of all available Unity releases by handling API pagination.
+-   **Powerful Filtering**: Allows filtering releases by version (full or partial, e.g., "2022.3") and by stream (`LTS`, `BETA`, `ALPHA`, `TECH`).
+-   **Latest LTS Release Notes**: Includes a dedicated method to find the latest official LTS release and return the direct URL to its markdown-based release notes.
+-   **Robust and Resilient**: Implements in-memory caching to reduce redundant API calls and improve performance.
+-   **Clean Architecture**: Built using a clean architecture, separating domain models, application logic, and infrastructure concerns.
+-   **Fully Tested**: Includes a comprehensive NUnit test suite.
 
 ## Usage
 
-The server exposes a `UnityReleaseTool` with the following methods that can be called by an MCP client. On failure, all methods throw a `ToolExecutionException`.
+The server exposes a `UnityReleaseTool` with the following methods. On failure, all methods throw a `ToolExecutionException`.
 
-### `GetUnityReleases(releaseType)`
+### `GetReleases(version, stream)`
 
-Retrieves a list of available Unity Editor releases.
+Retrieves a list of `UnityRelease` objects, which can be filtered by version and/or stream.
 
--   **`releaseType` (string)**: The type of releases to list. Can be `"official"` (default) or `"beta"`.
--   **Returns**: `Task<ReleaseListResult>`
+-   **`version` (string, optional)**: Filter by a full or partial version string (e.g., `"2022.3"`, `"2023.1.0a22"`).
+-   **`stream` (string, optional)**: Filter by release stream. Can be `"LTS"`, `"BETA"`, `"ALPHA"`, or `"TECH"`.
+-   **Returns**: `Task<List<UnityRelease>>`
 
-A `ReleaseListResult` object contains:
--   `string ReleaseType`: The type of release requested.
--   `List<string> Versions`: A list of version strings.
+The `UnityRelease` object is a rich model containing the full data provided by the API, including version, release date, stream, and a list of downloads.
 
-### `GetLatestReleaseNotes(releaseType)`
+### `GetLatestLtsReleaseNotesUrl()`
 
-Finds the latest release of a specific type and returns its release notes.
+Finds the latest official LTS (Long-Term Support) release and returns the direct URL to its markdown release notes file.
 
--   **`releaseType` (string)**: The type of release to find. Can be `"official"` (default) or `"beta"`.
--   **Returns**: `Task<ReleaseNotesResult>`
-
-### `GetReleaseNotesByVersion(version)`
-
-Fetches the release notes for a specific, full version string.
-
--   **`version` (string)**: The full version string to look up (e.g., `"2022.3.8f1"`).
--   **Returns**: `Task<ReleaseNotesResult>`
-
-A `ReleaseNotesResult` object contains:
--   `string Version`: The version number.
--   `string Url`: The URL to the full release notes.
--   `string Summary`: A brief summary of the release notes content.
--   `string ReleaseType`: The type of release.
-
-### `GetReleasesByStream(stream)`
-
-Retrieves a list of releases that belong to a specific major or minor version stream.
-
--   **`stream` (string)**: The partial version string to filter by (e.g., `"2022.3"`).
--   **Returns**: `Task<ReleaseListResult>`
+-   **Returns**: `Task<string>`
 
 ## Development
 
@@ -58,13 +37,13 @@ Retrieves a list of releases that belong to a specific major or minor version st
 
 The project follows Clean Architecture principles:
 
--   **`src/Domain`**: Contains the core domain models representing the API data structures.
--   **`src/Application`**: Holds the application logic, including the MCP tool definitions and client interfaces.
--   **`src/Infrastructure`**: Contains the implementation for external services, such as the `HttpClient`-based client for the Unity API.
+-   **`src/Domain`**: Contains the C# classes that map directly to the official Unity Release API schema.
+-   **`src/Application`**: Holds the application logic, including the `UnityReleaseTool` and client interfaces.
+-   **`src/Infrastructure`**: Contains the implementation for external services, including the `HttpClient`-based `UnityReleaseClient` and an `AngleSharp`-based HTML parser.
 
 ### Testing
 
-The solution includes a test project at `tests/UnityReleaseNoteMCP.Tests`. Tests are written using the NUnit framework and can be run via the .NET CLI:
+The solution includes a test project at `tests/UnityReleaseNoteMCP.Tests`. Tests can be run via the .NET CLI:
 
 ```sh
 dotnet test

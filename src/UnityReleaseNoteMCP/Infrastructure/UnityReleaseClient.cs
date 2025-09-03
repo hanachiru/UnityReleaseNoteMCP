@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web;
 using Microsoft.Extensions.Caching.Memory;
 using UnityReleaseNoteMCP.Application;
 using UnityReleaseNoteMCP.Domain;
@@ -14,32 +16,38 @@ public class UnityReleaseClient : IUnityReleaseClient
 {
     private readonly HttpClient _httpClient;
     private readonly IMemoryCache _cache;
-    private const string AllReleasesCacheKey = "AllReleases";
-    private const string UnityReleaseApiUrl = "https://services.api.unity.com/unity/editor/release/v1/releases";
+    private const string BaseUrl = "https://services.api.unity.com/unity/editor/release/v1/releases";
 
     public UnityReleaseClient(HttpClient httpClient, IMemoryCache cache)
     {
         _httpClient = httpClient;
         _cache = cache;
-        _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("curl/8.5.0");
-        _httpClient.DefaultRequestHeaders.Accept.ParseAdd("*/*");
     }
 
-    public async Task<ApiReleasesResponse?> GetReleasesAsync(CancellationToken cancellationToken = default)
+    public async Task<List<UnityRelease>> GetAllReleasesAsync(string? version = null, string? stream = null, CancellationToken cancellationToken = default)
     {
-        return await _cache.GetOrCreateAsync(AllReleasesCacheKey, async entry =>
-        {
-            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
+        var cacheKey = $"AllReleases_{version}_{stream}";
 
-            var allReleases = new List<ReleaseInfo>();
+        return (await _cache.GetOrCreateAsync(cacheKey, async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1);
+
+            var allReleases = new List<UnityRelease>();
             var offset = 0;
             const int limit = 25;
             int total;
 
             do
             {
-                var url = $"{UnityReleaseApiUrl}?limit={limit}&offset={offset}";
-                var response = await _httpClient.GetFromJsonAsync<ApiReleasesResponse>(url, cancellationToken);
+                var query = HttpUtility.ParseQueryString(string.Empty);
+                query["limit"] = limit.ToString();
+                query["offset"] = offset.ToString();
+                if (!string.IsNullOrEmpty(version)) query["version"] = version;
+                if (!string.IsNullOrEmpty(stream)) query["stream"] = stream;
+
+                var url = $"{BaseUrl}?{query}";
+
+                var response = await _httpClient.GetFromJsonAsync<UnityReleaseOffsetConnection>(url, cancellationToken);
 
                 if (response?.Results == null) break;
 
@@ -49,26 +57,8 @@ public class UnityReleaseClient : IUnityReleaseClient
 
             } while (allReleases.Count < total);
 
-            return new ApiReleasesResponse
-            {
-                Results = allReleases,
-                Total = allReleases.Count
-            };
-        });
-    }
-
-    public async Task<ReleaseInfo?> GetReleaseByVersionAsync(string version, CancellationToken cancellationToken = default)
-    {
-        var url = $"{UnityReleaseApiUrl}/{version}";
-        try
-        {
-            var releaseInfo = await _httpClient.GetFromJsonAsync<ReleaseInfo>(url, cancellationToken);
-            return releaseInfo;
-        }
-        catch (HttpRequestException)
-        {
-            return null; // Expected if not found
-        }
+            return allReleases;
+        }))!;
     }
 
     public async Task<string> GetPageContentAsync(string url, CancellationToken cancellationToken = default)
