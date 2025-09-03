@@ -50,14 +50,16 @@ public class Commands
         }
     }
 
-    [Command("latest-lts-notes-url", Description = "Gets the markdown URL for the latest official LTS release notes.")]
-    public async Task GetLatestLtsNotesUrl([FromService] UnityReleaseTool tool)
+    [Command("latest-lts", Description = "Gets the full data for the latest official LTS release.")]
+    public async Task GetLatestLtsRelease([FromService] UnityReleaseTool tool)
     {
         try
         {
-            var url = await tool.GetLatestLtsReleaseNotesUrl();
-            Console.WriteLine("Latest LTS Release Notes URL:");
-            Console.WriteLine(url);
+            var release = await tool.GetLatestLtsRelease();
+            Console.WriteLine($"Latest LTS Release: {release.Version}");
+            Console.WriteLine($"  Release Date: {release.ReleaseDate:yyyy-MM-dd}");
+            Console.WriteLine($"  Stream: {release.Stream}");
+            Console.WriteLine($"  Release Notes URL: {release.ReleaseNotes.Url}");
         }
         catch (ToolExecutionException ex)
         {

@@ -25,11 +25,11 @@ Retrieves a list of `UnityRelease` objects, which can be filtered by version and
 
 The `UnityRelease` object is a rich model containing the full data provided by the API, including version, release date, stream, and a list of downloads.
 
-### `GetLatestLtsReleaseNotesUrl()`
+### `GetLatestLtsRelease()`
 
-Finds the latest official LTS (Long-Term Support) release and returns the direct URL to its markdown release notes file.
+Finds the latest official LTS (Long-Term Support) release and returns the full `UnityRelease` object.
 
--   **Returns**: `Task<string>`
+-   **Returns**: `Task<UnityRelease>`
 
 ## Development
 

@@ -31,8 +31,8 @@ public class UnityReleaseTool
         return releases;
     }
 
-    [McpServerTool, Description("Gets the release notes markdown URL for the latest official LTS release.")]
-    public async Task<string> GetLatestLtsReleaseNotesUrl()
+    [McpServerTool, Description("Gets the full release data object for the latest official LTS release.")]
+    public async Task<UnityRelease> GetLatestLtsRelease()
     {
         var ltsReleases = await _client.GetAllReleasesAsync(stream: "LTS");
 
@@ -48,7 +48,7 @@ public class UnityReleaseTool
             throw new ToolExecutionException("Could not find the latest LTS release.");
         }
 
-        return latestLts.Release.ReleaseNotes.Url;
+        return latestLts.Release;
     }
 
     private Version? ParseVersion(string versionString)

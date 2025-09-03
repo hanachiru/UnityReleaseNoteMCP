@@ -119,20 +119,22 @@ public class UnityReleaseToolTests
     }
 
     [Test]
-    public async Task GetLatestLtsReleaseNotesUrl_FindsCorrectUrl()
+    public async Task GetLatestLtsRelease_FindsCorrectRelease()
     {
         // Arrange
         _mockClient.ReleasesToReturn = CreateTestData();
 
         // Act
-        var url = await _tool.GetLatestLtsReleaseNotesUrl();
+        var release = await _tool.GetLatestLtsRelease();
 
         // Assert
-        Assert.That(url, Is.EqualTo("http://lts-newer.url"));
+        Assert.That(release, Is.Not.Null);
+        Assert.That(release.Version, Is.EqualTo("2022.3.10f1"));
+        Assert.That(release.Stream, Is.EqualTo("LTS"));
     }
 
     [Test]
-    public void GetLatestLtsReleaseNotesUrl_NoLtsReleases_ThrowsException()
+    public void GetLatestLtsRelease_NoLtsReleases_ThrowsException()
     {
         // Arrange
         _mockClient.ReleasesToReturn = new List<UnityRelease>
@@ -141,7 +143,7 @@ public class UnityReleaseToolTests
         };
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<ToolExecutionException>(async () => await _tool.GetLatestLtsReleaseNotesUrl());
+        var ex = Assert.ThrowsAsync<ToolExecutionException>(async () => await _tool.GetLatestLtsRelease());
         Assert.That(ex.Message, Is.EqualTo("Could not find the latest LTS release."));
     }
 }

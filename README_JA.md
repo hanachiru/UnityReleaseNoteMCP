@@ -25,11 +25,11 @@
 
 `UnityRelease` オブジェクトは、バージョン、リリース日、ストリーム、ダウンロードリストなど、APIから提供される完全なデータを含むリッチモデルです。
 
-### `GetLatestLtsReleaseNotesUrl()`
+### `GetLatestLtsRelease()`
 
-最新の公式LTS（長期サポート）リリースを見つけ、そのMarkdown形式のリリースノートファイルへの直接URLを返します。
+最新の公式LTS（長期サポート）リリースを見つけ、その完全な `UnityRelease` オブジェクトを返します。
 
--   **戻り値**: `Task<string>`
+-   **戻り値**: `Task<UnityRelease>`
 
 ## 開発
 
