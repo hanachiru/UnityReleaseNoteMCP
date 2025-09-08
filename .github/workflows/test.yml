@@ -12,8 +12,6 @@ jobs:
         os: [ubuntu-latest, windows-latest, macOS-latest]
     steps:
       - uses: actions/checkout@v5
-        with:
-          submodules: true
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
