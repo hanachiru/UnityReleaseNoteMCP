@@ -4,10 +4,6 @@ on:
   pull_request:
     branches: [main]
 
-env:
-  DOTNET_VERSION: "8.0.x"
-  SLN_PATH: "UnityReleaseNoteMCP.slnx"
-
 jobs:
   test:
     runs-on: ${{ matrix.os }}
@@ -20,7 +16,7 @@ jobs:
           submodules: true
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+          dotnet-version: 8.0.x
       - run: dotnet restore
       - run: dotnet build --configuration Release --no-restore
-      - run: dotnet test "${SLN_PATH}" --no-restore --verbosity normal
+      - run: dotnet test --no-restore --verbosity normal
