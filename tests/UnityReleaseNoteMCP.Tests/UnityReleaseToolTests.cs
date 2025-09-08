@@ -51,29 +51,57 @@ public class UnityReleaseToolTests
 
     private List<UnityRelease> CreateTestData()
     {
-        return
-        [
+        return new List<UnityRelease>
+        {
             new()
             {
-                Version = "2022.3.5f1", Stream = "LTS", ReleaseDate = DateTime.Now.AddDays(-10),
-                ReleaseNotes = new UnityReleaseNotes { Url = "http://lts.url" }
+                Version = "2022.3.5f1",
+                Stream = "LTS",
+                ReleaseDate = DateTime.Now.AddDays(-10),
+                ReleaseNotes = new UnityReleaseNotes { Url = "http://lts.url", Type = "MD" },
+                Downloads = new List<UnityReleaseDownload>(),
+                SkuFamily = "CLASSIC",
+                UnityHubDeepLink = "unityhub://2022.3.5f1/12345",
+                ShortRevision = "12345",
+                ThirdPartyNotices = new List<UnityReleaseThirdPartyNotice>()
             },
             new()
             {
-                Version = "2023.1.0a20", Stream = "ALPHA", ReleaseDate = DateTime.Now.AddDays(-5),
-                ReleaseNotes = new UnityReleaseNotes { Url = "http://alpha.url" }
+                Version = "2023.1.0a20",
+                Stream = "ALPHA",
+                ReleaseDate = DateTime.Now.AddDays(-5),
+                ReleaseNotes = new UnityReleaseNotes { Url = "http://alpha.url", Type = "MD" },
+                Downloads = new List<UnityReleaseDownload>(),
+                SkuFamily = "CLASSIC",
+                UnityHubDeepLink = "unityhub://2023.1.0a20/67890",
+                ShortRevision = "67890",
+                ThirdPartyNotices = new List<UnityReleaseThirdPartyNotice>()
             },
             new()
             {
-                Version = "2023.2.0b1", Stream = "BETA", ReleaseDate = DateTime.Now.AddDays(-3),
-                ReleaseNotes = new UnityReleaseNotes { Url = "http://beta.url" }
+                Version = "2023.2.0b1",
+                Stream = "BETA",
+                ReleaseDate = DateTime.Now.AddDays(-3),
+                ReleaseNotes = new UnityReleaseNotes { Url = "http://beta.url", Type = "MD" },
+                Downloads = new List<UnityReleaseDownload>(),
+                SkuFamily = "CLASSIC",
+                UnityHubDeepLink = "unityhub://2023.2.0b1/abcde",
+                ShortRevision = "abcde",
+                ThirdPartyNotices = new List<UnityReleaseThirdPartyNotice>()
             },
             new()
             {
-                Version = "2022.3.10f1", Stream = "LTS", ReleaseDate = DateTime.Now.AddDays(-1),
-                ReleaseNotes = new UnityReleaseNotes { Url = "http://lts-newer.url" }
+                Version = "2022.3.10f1",
+                Stream = "LTS",
+                ReleaseDate = DateTime.Now.AddDays(-1),
+                ReleaseNotes = new UnityReleaseNotes { Url = "http://lts-newer.url", Type = "MD" },
+                Downloads = new List<UnityReleaseDownload>(),
+                SkuFamily = "CLASSIC",
+                UnityHubDeepLink = "unityhub://2022.3.10f1/fghij",
+                ShortRevision = "fghij",
+                ThirdPartyNotices = new List<UnityReleaseThirdPartyNotice>()
             }
-        ];
+        };
     }
 
     [Test]
@@ -149,7 +177,17 @@ public class UnityReleaseToolTests
         // Arrange
         _mockClient.ReleasesToReturn = new List<UnityRelease>
         {
-            new() { Version = "2023.1.0a20", Stream = "ALPHA" }
+            new()
+            {
+                Version = "2023.1.0a20",
+                Stream = "ALPHA",
+                ReleaseNotes = new UnityReleaseNotes { Url = "http://alpha.url", Type = "MD" },
+                Downloads = new List<UnityReleaseDownload>(),
+                SkuFamily = "CLASSIC",
+                UnityHubDeepLink = "unityhub://2023.1.0a20/67890",
+                ShortRevision = "67890",
+                ThirdPartyNotices = new List<UnityReleaseThirdPartyNotice>()
+            }
         };
 
         // Act & Assert
