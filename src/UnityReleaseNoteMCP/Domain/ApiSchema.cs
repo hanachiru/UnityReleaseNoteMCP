@@ -1,14 +1,16 @@
 using System.ComponentModel;
 using System.Text.Json.Serialization;
+using UnityReleaseNoteMCP.Infrastructure;
 
 namespace UnityReleaseNoteMCP.Domain;
 
+[JsonConverter(typeof(UnityReleaseDigitalValueConverter))]
 [Description("A Unity Release Digital Value as defined on Release Live Platform.")]
 public class UnityReleaseDigitalValue
 {
     [JsonPropertyName("value")]
     [Description("The value of the Unity Release Digital Value.")]
-    public long Value { get; set; }
+    public double? Value { get; set; }
 
     [JsonPropertyName("unit")]
     [Description("The unit of the Unity Release Digital Value. Can be 'BYTE', 'KILOBYTE', 'MEGABYTE', or 'GIGABYTE'.")]
@@ -124,11 +126,11 @@ public class UnityReleaseModule
 
     [JsonPropertyName("downloadSize")]
     [Description("The download size of the Unity Release module.")]
-    public required UnityReleaseDigitalValue DownloadSize { get; set; }
+    public UnityReleaseDigitalValue? DownloadSize { get; set; }
 
     [JsonPropertyName("installedSize")]
     [Description("The installed size of the Unity Release module.")]
-    public required UnityReleaseDigitalValue InstalledSize { get; set; }
+    public UnityReleaseDigitalValue? InstalledSize { get; set; }
 
     [JsonPropertyName("subModules")]
     [Description("The optional sub-modules of the Unity Release module.")]
