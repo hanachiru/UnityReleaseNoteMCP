@@ -34,8 +34,10 @@ public class UnityReleaseClient(HttpClient httpClient, IMemoryCache cache) : IUn
                 var url = $"{BaseUrl}?{query}";
 
                 var response = await httpClient.GetFromJsonAsync<UnityReleaseOffsetConnection>(url, cancellationToken);
-
-                if (response?.Results == null) break;
+                if (response?.Results == null)
+                {
+                    break;
+                }
 
                 allReleases.AddRange(response.Results);
                 total = response.Total;

@@ -1,6 +1,5 @@
 using ModelContextProtocol.Server;
 using System.ComponentModel;
-using System.Text.RegularExpressions;
 using UnityReleaseNoteMCP.Domain;
 
 namespace UnityReleaseNoteMCP.Application;
@@ -25,11 +24,28 @@ public class UnityReleaseTool
         [Description("Filters by Unity Release download architecture.")] IReadOnlyList<string>? architecture = null,
         [Description("Filters by a full text search on the version string.")] string? version = null)
     {
-        // The client only supports filtering by a single stream.
-        // If we have one stream, pass it to the client for pre-filtering.
-        // If we have more than one, we must fetch all versions and filter in memory.
-        var clientStream = stream is { Count: 1 } ? stream[0] : null;
-        var allReleases = await _client.GetAllReleasesAsync(version, clientStream);
+        List<UnityRelease> allReleases;
+
+        // If no streams are specified, or if the list is empty, fetch all releases for the given version.
+        if (stream == null || stream.Count == 0)
+        {
+            allReleases = await _client.GetAllReleasesAsync(version, null);
+        }
+        else
+        {
+            // If streams are specified, fetch releases for each stream and combine them.
+            var combinedReleases = new List<UnityRelease>();
+            foreach (var s in stream)
+            {
+                var releasesForStream = await _client.GetAllReleasesAsync(version, s);
+                if (releasesForStream != null)
+                {
+                    combinedReleases.AddRange(releasesForStream);
+                }
+            }
+            // Remove duplicates that might arise if a release is in multiple queried streams
+            allReleases = combinedReleases.DistinctBy(r => r.Version).ToList();
+        }
 
         if (allReleases == null)
         {
@@ -38,13 +54,6 @@ public class UnityReleaseTool
 
         // --- In-Memory Filtering ---
         var filteredReleases = allReleases.AsEnumerable();
-
-        // Filter by stream (only if we didn't pre-filter via the client)
-        if (clientStream == null && stream is { Count: > 0 })
-        {
-            var streamSet = new HashSet<string>(stream, StringComparer.OrdinalIgnoreCase);
-            filteredReleases = filteredReleases.Where(r => streamSet.Contains(r.Stream));
-        }
 
         // Filter by platform
         if (platform is { Count: > 0 })
@@ -67,6 +76,7 @@ public class UnityReleaseTool
         }
         else
         {
+            // Default to descending order
             filteredReleases = filteredReleases.OrderByDescending(r => r.ReleaseDate);
         }
 
