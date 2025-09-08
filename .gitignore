@@ -1,0 +1,17 @@
+# IDE files
+.idea/
+.vs/
+
+# Build artifacts
+[Bb]in/
+[Oo]bj/
+
+# User-specific files
+*.user
+*.suo
+
+# Cache files
+.DS_Store
+
+# Local dotnet install
+dotnet9/
