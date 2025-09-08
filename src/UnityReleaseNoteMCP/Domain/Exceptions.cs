@@ -4,10 +4,6 @@ namespace UnityReleaseNoteMCP.Domain;
 
 public class ToolExecutionException : Exception
 {
-    public ToolExecutionException()
-    {
-    }
-
     public ToolExecutionException(string message)
         : base(message)
     {

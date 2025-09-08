@@ -1,9 +1,6 @@
 using ModelContextProtocol.Server;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using UnityReleaseNoteMCP.Domain;
 
 namespace UnityReleaseNoteMCP.Application;
@@ -36,8 +33,7 @@ public class UnityReleaseTool
     {
         var ltsReleases = await _client.GetAllReleasesAsync(stream: "LTS");
 
-        var latestLts = ltsReleases?
-            .Where(r => r.Version.Contains("f")) // Ensure it's an official release
+        var latestLts = ltsReleases.Where(r => r.Version.Contains("f")) // Ensure it's an official release
             .Select(r => new { Release = r, ParsedVersion = ParseVersion(r.Version) })
             .Where(r => r.ParsedVersion != null)
             .OrderByDescending(r => r.ParsedVersion)

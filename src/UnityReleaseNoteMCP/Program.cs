@@ -14,7 +14,6 @@ builder.Services.AddSingleton<IUnityReleaseClient, UnityReleaseClient>();
 builder.Services
     .AddMcpServer()
     .WithStdioServerTransport()
-    .WithToolsFromAssembly()
-    .WithResourcesFromAssembly();
+    .WithToolsFromAssembly();
 
 await builder.Build().RunAsync();

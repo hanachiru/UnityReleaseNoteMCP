@@ -1,25 +1,34 @@
-using System;
-using System.Collections.Generic;
+using System.ComponentModel;
 using System.Text.Json.Serialization;
 
 namespace UnityReleaseNoteMCP.Domain;
 
+[Description("A Unity Release Digital Value as defined on Release Live Platform.")]
 public class UnityReleaseDigitalValue
 {
     [JsonPropertyName("value")]
-    public long Value { get; set; }
+    [Description("The value of the Unity Release Digital Value.")]
+    public required long Value { get; set; }
 
     [JsonPropertyName("unit")]
-    public string Unit { get; set; } = string.Empty;
+    [Description("The unit of the Unity Release Digital Value.enum: BYTE, KILOBYTE, MEGABYTE, GIGABYTE.")]
+    public required string Unit { get; set; } = string.Empty;
 }
 
+[Description("A Unity Release Notes File as defined on Release Live Platform.")]
 public class UnityReleaseNotes
 {
     [JsonPropertyName("url")]
-    public string Url { get; set; } = string.Empty;
+    [Description("The URL of the Unity Release notes.")]
+    public required string Url { get; set; } = string.Empty;
+    
+    [JsonPropertyName("integrity")]
+    [Description("The Subresource Integrity of the Unity Release notes as defined by the [W3C Recommendation Subresource Integrity](https://www.w3.org/TR/SRI/). For example, `sha1-OTVjZTI0ZTk5MDg0YTMyYTBmZTdiNTU1NTMwZGRhYjQ3OWMzYzc1MQo=`.")]
+    public string Integrity { get; set; } = string.Empty;
 
     [JsonPropertyName("type")]
-    public string Type { get; set; } = string.Empty;
+    [Description("The file type of the Unity Release notes. enum: TEXT, TAR_GZ, TAR_XZ, ZIP, PKG, EXE, PO, DMG, LZMA, LZ4, MD, PDF")]
+    public required string Type { get; set; } = string.Empty;
 }
 
 public class UnityReleaseDownload

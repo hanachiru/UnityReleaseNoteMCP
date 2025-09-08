@@ -1,11 +1,5 @@
-using NUnit.Framework;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using UnityReleaseNoteMCP.Application;
 using UnityReleaseNoteMCP.Domain;
-using System.Linq;
-using System;
 
 namespace UnityReleaseNoteMCP.Tests;
 
@@ -57,13 +51,29 @@ public class UnityReleaseToolTests
 
     private List<UnityRelease> CreateTestData()
     {
-        return new List<UnityRelease>
-        {
-            new() { Version = "2022.3.5f1", Stream = "LTS", ReleaseDate = DateTime.Now.AddDays(-10), ReleaseNotes = new UnityReleaseNotes { Url = "http://lts.url" } },
-            new() { Version = "2023.1.0a20", Stream = "ALPHA", ReleaseDate = DateTime.Now.AddDays(-5), ReleaseNotes = new UnityReleaseNotes { Url = "http://alpha.url" } },
-            new() { Version = "2023.2.0b1", Stream = "BETA", ReleaseDate = DateTime.Now.AddDays(-3), ReleaseNotes = new UnityReleaseNotes { Url = "http://beta.url" } },
-            new() { Version = "2022.3.10f1", Stream = "LTS", ReleaseDate = DateTime.Now.AddDays(-1), ReleaseNotes = new UnityReleaseNotes { Url = "http://lts-newer.url" } }
-        };
+        return
+        [
+            new()
+            {
+                Version = "2022.3.5f1", Stream = "LTS", ReleaseDate = DateTime.Now.AddDays(-10),
+                ReleaseNotes = new UnityReleaseNotes { Url = "http://lts.url" }
+            },
+            new()
+            {
+                Version = "2023.1.0a20", Stream = "ALPHA", ReleaseDate = DateTime.Now.AddDays(-5),
+                ReleaseNotes = new UnityReleaseNotes { Url = "http://alpha.url" }
+            },
+            new()
+            {
+                Version = "2023.2.0b1", Stream = "BETA", ReleaseDate = DateTime.Now.AddDays(-3),
+                ReleaseNotes = new UnityReleaseNotes { Url = "http://beta.url" }
+            },
+            new()
+            {
+                Version = "2022.3.10f1", Stream = "LTS", ReleaseDate = DateTime.Now.AddDays(-1),
+                ReleaseNotes = new UnityReleaseNotes { Url = "http://lts-newer.url" }
+            }
+        ];
     }
 
     [Test]

@@ -1,6 +1,4 @@
 using AngleSharp;
-using AngleSharp.Dom;
-using System.Linq;
 using UnityReleaseNoteMCP.Application;
 
 namespace UnityReleaseNoteMCP.Infrastructure;
