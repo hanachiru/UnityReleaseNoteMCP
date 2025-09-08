@@ -55,4 +55,34 @@ public class UnityReleaseTool
         Version.TryParse(parsableVersionString, out var parsedVersion);
         return parsedVersion;
     }
+
+    [McpServerTool, Description("Gets a list of all available modules for a specific Unity release.")]
+    public async Task<List<UnityReleaseModule>> GetReleaseModules(
+        [Description("The full version string of the release (e.g., '2022.3.1f1')")] string version)
+    {
+        var releases = await _client.GetAllReleasesAsync(version: version);
+        var release = releases.FirstOrDefault();
+
+        if (release == null)
+        {
+            throw new ToolExecutionException($"Could not find a release with version '{version}'.");
+        }
+
+        return release.Downloads.SelectMany(d => d.Modules).ToList();
+    }
+
+    [McpServerTool, Description("Gets the release notes for a specific Unity release.")]
+    public async Task<UnityReleaseNotes> GetReleaseNotes(
+        [Description("The full version string of the release (e.g., '2022.3.1f1')")] string version)
+    {
+        var releases = await _client.GetAllReleasesAsync(version: version);
+        var release = releases.FirstOrDefault();
+
+        if (release == null)
+        {
+            throw new ToolExecutionException($"Could not find a release with version '{version}'.");
+        }
+
+        return release.ReleaseNotes;
+    }
 }
