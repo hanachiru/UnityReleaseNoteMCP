@@ -7,6 +7,7 @@ namespace UnityReleaseNoteMCP.Tests;
 public class MockUnityReleaseClient : IUnityReleaseClient
 {
     public List<UnityRelease>? ReleasesToReturn { get; set; }
+    public Dictionary<string, string> PageContentToReturn { get; set; } = new();
 
     public Task<List<UnityRelease>> GetAllReleasesAsync(string? version = null, string? stream = null, CancellationToken cancellationToken = default)
     {
@@ -19,11 +20,11 @@ public class MockUnityReleaseClient : IUnityReleaseClient
 
         if (!string.IsNullOrEmpty(version))
         {
-            query = query.Where(r => r.Version.StartsWith(version));
+            // The tool is for "full text search", so Contains is a better mock behavior.
+            query = query.Where(r => r.Version.Contains(version.Trim(), StringComparison.OrdinalIgnoreCase));
         }
         if (!string.IsNullOrEmpty(stream))
         {
-            // Note: The mock client only supports a single stream filter, similar to the real implementation's limitation.
             query = query.Where(r => r.Stream.Equals(stream, StringComparison.OrdinalIgnoreCase));
         }
 
@@ -32,7 +33,11 @@ public class MockUnityReleaseClient : IUnityReleaseClient
 
     public Task<string> GetPageContentAsync(string url, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult("Mocked Markdown Content");
+        if (PageContentToReturn.TryGetValue(url, out var content))
+        {
+            return Task.FromResult(content);
+        }
+        return Task.FromResult(string.Empty);
     }
 }
 
@@ -201,5 +206,48 @@ public class UnityReleaseToolTests
         var result = await _tool.GetUnityReleases();
         Assert.That(result.Total, Is.EqualTo(0));
         Assert.That(result.Results, Is.Empty);
+    }
+
+    [Test]
+    public async Task GetUnityReleaseNotesContent_ValidVersion_ReturnsContent()
+    {
+        // Arrange
+        const string testVersion = "2022.3.5f1";
+        const string testUrl = "http://lts.url";
+        const string expectedContent = "## Release Notes\n\n- Fixed everything.";
+        _mockClient.PageContentToReturn[testUrl] = expectedContent;
+
+        // Act
+        var result = await _tool.GetUnityReleaseNotesContent(testVersion);
+
+        // Assert
+        Assert.That(result, Is.EqualTo(expectedContent));
+    }
+
+    [Test]
+    public async Task GetUnityReleaseNotesContent_VersionNotFound_ReturnsError()
+    {
+        // Act
+        var result = await _tool.GetUnityReleaseNotesContent("2000.1.1f1");
+
+        // Assert
+        Assert.That(result, Is.EqualTo("Error: Unity version '2000.1.1f1' not found."));
+    }
+
+    [Test]
+    public async Task GetUnityReleaseNotesContent_UrlMissing_ReturnsError()
+    {
+        // Arrange
+        var releaseToModify = _mockClient.ReleasesToReturn?.First(r => r.Version == "2022.3.5f1");
+        if (releaseToModify != null)
+        {
+            releaseToModify.ReleaseNotes = new UnityReleaseNotes { Url = "", Type = "MD" };
+        }
+
+        // Act
+        var result = await _tool.GetUnityReleaseNotesContent("2022.3.5f1");
+
+        // Assert
+        Assert.That(result, Is.EqualTo("Error: No release notes URL found for version '2022.3.5f1'."));
     }
 }

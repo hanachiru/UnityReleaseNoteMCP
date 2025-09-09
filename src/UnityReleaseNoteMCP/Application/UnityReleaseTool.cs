@@ -93,4 +93,29 @@ public class UnityReleaseTool
             Results = paginatedResults
         };
     }
+
+    [McpServerTool(Name = "getUnityReleaseNotesContent"), Description("Get the content of the release notes for a specific Unity version.")]
+    public async Task<string> GetUnityReleaseNotesContent(
+        [Description("The exact version string of the Unity Release (e.g., '2022.3.10f1').")] string version)
+    {
+        if (string.IsNullOrWhiteSpace(version))
+        {
+            return "Error: A version must be provided.";
+        }
+
+        var releases = await _client.GetAllReleasesAsync(version.Trim());
+        var release = releases?.FirstOrDefault();
+
+        if (release == null)
+        {
+            return $"Error: Unity version '{version}' not found.";
+        }
+
+        if (string.IsNullOrWhiteSpace(release.ReleaseNotes?.Url))
+        {
+            return $"Error: No release notes URL found for version '{version}'.";
+        }
+
+        return await _client.GetPageContentAsync(release.ReleaseNotes.Url);
+    }
 }

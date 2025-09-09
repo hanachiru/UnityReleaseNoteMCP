@@ -9,15 +9,13 @@ class Program
 {
     static async Task Main(string[] args)
     {
-        // 1. Set up Dependency Injection
         var serviceProvider = new ServiceCollection()
             .AddHttpClient()
-            .AddMemoryCache() // Add this line
+            .AddMemoryCache()
             .AddSingleton<IUnityReleaseClient, UnityReleaseClient>()
             .AddTransient<UnityReleaseTool>()
             .BuildServiceProvider();
 
-        // 2. Get an instance of the tool
         var unityTool = serviceProvider.GetService<UnityReleaseTool>();
 
         if (unityTool == null)
@@ -28,24 +26,38 @@ class Program
 
         try
         {
-            // 3. Call the method
-            Console.WriteLine("Fetching Unity releases...");
-            var releases = await unityTool.GetUnityReleases(limit: 5, stream: new[] { "LTS" });
-
-            // 4. Serialize and print the result
-            var options = new JsonSerializerOptions
+            // Check if a version argument is provided
+            if (args.Length > 0)
             {
-                WriteIndented = true,
-            };
-            string jsonResult = JsonSerializer.Serialize(releases, options);
+                var version = args[0];
+                Console.WriteLine($"Fetching release notes for version: {version}...");
+                var notesContent = await unityTool.GetUnityReleaseNotesContent(version);
 
-            Console.WriteLine("--- Results ---");
-            Console.WriteLine(jsonResult);
-            Console.WriteLine("---------------");
+                Console.WriteLine("--- Release Notes Content ---");
+                Console.WriteLine(notesContent);
+                Console.WriteLine("-----------------------------");
+            }
+            else
+            {
+                Console.WriteLine("Fetching Unity releases (limit 5, stream LTS)...");
+                var releases = await unityTool.GetUnityReleases(limit: 5, stream: new[] { "LTS" });
+
+                var options = new JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                };
+                string jsonResult = JsonSerializer.Serialize(releases, options);
+
+                Console.WriteLine("--- Results ---");
+                Console.WriteLine(jsonResult);
+                Console.WriteLine("---------------");
+            }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"An error occurred: {ex.Message}");
+            // Optional: Print stack trace for more details during development
+            // Console.WriteLine(ex.ToString());
         }
     }
 }
