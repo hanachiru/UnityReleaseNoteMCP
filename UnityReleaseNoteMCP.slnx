@@ -1,0 +1,4 @@
+﻿<Solution>
+  <Project Path="src\UnityReleaseNoteMCP\UnityReleaseNoteMCP.csproj" Type="Classic C#" />
+  <Project Path="tests\UnityReleaseNoteMCP.Tests\UnityReleaseNoteMCP.Tests.csproj" Type="Classic C#" />
+</Solution>

@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <RollForward>Major</RollForward>
+        <OutputType>Exe</OutputType>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+
+        <PackAsTool>true</PackAsTool>
+        <PackageType>McpServer</PackageType>
+
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageId>UnityReleaseNoteMCP</PackageId>
+        <PackageTags>AI; MCP; server; stdio</PackageTags>
+        <Description></Description>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="../../.mcp/server.json" Pack="true" PackagePath="/.mcp/" />
+        <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+        <None Include="..\..\README_JA.md" Pack="true" PackagePath="\" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0-preview.7.25380.108" />
+        <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0-preview.7.25380.108" />
+        <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.0" />
+        <PackageReference Include="AngleSharp" Version="1.1.2" />
+        <PackageReference Include="ModelContextProtocol" Version="0.3.0-preview.3" />
+    </ItemGroup>
+</Project>

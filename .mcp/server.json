@@ -1,0 +1,20 @@
+{
+  "$schema": "https://modelcontextprotocol.io/schemas/draft/2025-07-09/server.json",
+  "description": "",
+  "name": "io.github.hanachiru/UnityReleaseNoteMCP",
+  "packages": [
+    {
+      "registry_name": "nuget",
+      "name": "UnityReleaseNoteMCP",
+      "version": "0.1.0",
+      "package_arguments": []
+    }
+  ],
+  "repository": {
+    "url": "https://github.com/hanachiru/UnityReleaseNoteMCP",
+    "source": "github"
+  },
+  "version_detail": {
+    "version": "0.1.0"
+  }
+}
