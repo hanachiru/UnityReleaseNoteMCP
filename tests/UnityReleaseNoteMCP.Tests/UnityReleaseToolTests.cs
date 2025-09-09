@@ -7,6 +7,7 @@ namespace UnityReleaseNoteMCP.Tests;
 public class MockUnityReleaseClient : IUnityReleaseClient
 {
     public List<UnityRelease>? ReleasesToReturn { get; set; }
+    public Dictionary<string, string> PageContentToReturn { get; set; } = new();
 
     public Task<List<UnityRelease>> GetAllReleasesAsync(string? version = null, string? stream = null, CancellationToken cancellationToken = default)
     {
@@ -19,7 +20,8 @@ public class MockUnityReleaseClient : IUnityReleaseClient
 
         if (!string.IsNullOrEmpty(version))
         {
-            query = query.Where(r => r.Version.StartsWith(version));
+            // The tool is for "full text search", so Contains is a better mock behavior.
+            query = query.Where(r => r.Version.Contains(version.Trim(), StringComparison.OrdinalIgnoreCase));
         }
         if (!string.IsNullOrEmpty(stream))
         {
@@ -31,7 +33,11 @@ public class MockUnityReleaseClient : IUnityReleaseClient
 
     public Task<string> GetPageContentAsync(string url, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult("Mocked Markdown Content");
+        if (PageContentToReturn.TryGetValue(url, out var content))
+        {
+            return Task.FromResult(content);
+        }
+        return Task.FromResult(string.Empty);
     }
 }
 
@@ -41,157 +47,207 @@ public class UnityReleaseToolTests
 {
     private MockUnityReleaseClient _mockClient = null!;
     private UnityReleaseTool _tool = null!;
+    private static readonly DateTime TestStartDate = new(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
     [SetUp]
     public void Setup()
     {
         _mockClient = new MockUnityReleaseClient();
         _tool = new UnityReleaseTool(_mockClient);
+        _mockClient.ReleasesToReturn = CreateTestData();
     }
 
     private List<UnityRelease> CreateTestData()
     {
+        var dummySize = new UnityReleaseDigitalValue { Unit = "BYTE", Value = 100 };
         return new List<UnityRelease>
         {
-            new()
+            new() // Index 0
             {
-                Version = "2022.3.5f1",
-                Stream = "LTS",
-                ReleaseDate = DateTime.Now.AddDays(-10),
-                ReleaseNotes = new UnityReleaseNotes { Url = "http://lts.url", Type = "MD" },
-                Downloads = new List<UnityReleaseDownload>(),
-                SkuFamily = "CLASSIC",
-                UnityHubDeepLink = "unityhub://2022.3.5f1/12345",
-                ShortRevision = "12345",
-                ThirdPartyNotices = new List<UnityReleaseThirdPartyNotice>()
+                Version = "2022.3.5f1", Stream = "LTS", ReleaseDate = TestStartDate.AddDays(-10),
+                Downloads = new List<UnityReleaseDownload>
+                {
+                    new() { Platform = "WINDOWS", Architecture = "X86_64", DownloadSize = dummySize, InstalledSize = dummySize, Modules = new(), Type = "EXE", Url = ""},
+                    new() { Platform = "MAC_OS", Architecture = "X86_64", DownloadSize = dummySize, InstalledSize = dummySize, Modules = new(), Type = "PKG", Url = ""},
+                },
+                ReleaseNotes = new UnityReleaseNotes { Url = "http://lts.url", Type = "MD" }, SkuFamily = "CLASSIC", UnityHubDeepLink = "unityhub://2022.3.5f1/1", ShortRevision = "1", ThirdPartyNotices = new()
             },
-            new()
+            new() // Index 1
             {
-                Version = "2023.1.0a20",
-                Stream = "ALPHA",
-                ReleaseDate = DateTime.Now.AddDays(-5),
-                ReleaseNotes = new UnityReleaseNotes { Url = "http://alpha.url", Type = "MD" },
-                Downloads = new List<UnityReleaseDownload>(),
-                SkuFamily = "CLASSIC",
-                UnityHubDeepLink = "unityhub://2023.1.0a20/67890",
-                ShortRevision = "67890",
-                ThirdPartyNotices = new List<UnityReleaseThirdPartyNotice>()
+                Version = "2023.1.0a20", Stream = "ALPHA", ReleaseDate = TestStartDate.AddDays(-5),
+                Downloads = new List<UnityReleaseDownload>
+                {
+                    new() { Platform = "WINDOWS", Architecture = "X86_64", DownloadSize = dummySize, InstalledSize = dummySize, Modules = new(), Type = "EXE", Url = ""},
+                    new() { Platform = "LINUX", Architecture = "X86_64", DownloadSize = dummySize, InstalledSize = dummySize, Modules = new(), Type = "TAR_GZ", Url = ""},
+                },
+                ReleaseNotes = new UnityReleaseNotes { Url = "http://alpha.url", Type = "MD" }, SkuFamily = "CLASSIC", UnityHubDeepLink = "unityhub://2023.1.0a20/2", ShortRevision = "2", ThirdPartyNotices = new()
             },
-            new()
+            new() // Index 2
             {
-                Version = "2023.2.0b1",
-                Stream = "BETA",
-                ReleaseDate = DateTime.Now.AddDays(-3),
-                ReleaseNotes = new UnityReleaseNotes { Url = "http://beta.url", Type = "MD" },
-                Downloads = new List<UnityReleaseDownload>(),
-                SkuFamily = "CLASSIC",
-                UnityHubDeepLink = "unityhub://2023.2.0b1/abcde",
-                ShortRevision = "abcde",
-                ThirdPartyNotices = new List<UnityReleaseThirdPartyNotice>()
+                Version = "2023.2.0b1", Stream = "BETA", ReleaseDate = TestStartDate.AddDays(-3),
+                Downloads = new List<UnityReleaseDownload>
+                {
+                    new() { Platform = "WINDOWS", Architecture = "ARM64", DownloadSize = dummySize, InstalledSize = dummySize, Modules = new(), Type = "EXE", Url = ""},
+                },
+                ReleaseNotes = new UnityReleaseNotes { Url = "http://beta.url", Type = "MD" }, SkuFamily = "CLASSIC", UnityHubDeepLink = "unityhub://2023.2.0b1/3", ShortRevision = "3", ThirdPartyNotices = new()
             },
-            new()
+            new() // Index 3
             {
-                Version = "2022.3.10f1",
-                Stream = "LTS",
-                ReleaseDate = DateTime.Now.AddDays(-1),
-                ReleaseNotes = new UnityReleaseNotes { Url = "http://lts-newer.url", Type = "MD" },
-                Downloads = new List<UnityReleaseDownload>(),
-                SkuFamily = "CLASSIC",
-                UnityHubDeepLink = "unityhub://2022.3.10f1/fghij",
-                ShortRevision = "fghij",
-                ThirdPartyNotices = new List<UnityReleaseThirdPartyNotice>()
+                Version = "2022.3.10f1", Stream = "LTS", ReleaseDate = TestStartDate.AddDays(-1),
+                Downloads = new List<UnityReleaseDownload>
+                {
+                    new() { Platform = "MAC_OS", Architecture = "ARM64", DownloadSize = dummySize, InstalledSize = dummySize, Modules = new(), Type = "PKG", Url = ""},
+                },
+                ReleaseNotes = new UnityReleaseNotes { Url = "http://lts-newer.url", Type = "MD" }, SkuFamily = "CLASSIC", UnityHubDeepLink = "unityhub://2022.3.10f1/4", ShortRevision = "4", ThirdPartyNotices = new()
             }
         };
     }
 
     [Test]
-    public async Task GetReleases_NoFilter_ReturnsAllReleases()
+    public async Task GetUnityReleases_NoFilter_ReturnsAllReleases_DescOrderByDefault()
     {
-        // Arrange
-        _mockClient.ReleasesToReturn = CreateTestData();
-
-        // Act
-        var result = await _tool.GetReleases();
-
-        // Assert
-        Assert.That(result, Has.Count.EqualTo(4));
+        var result = await _tool.GetUnityReleases();
+        Assert.That(result.Total, Is.EqualTo(4));
+        Assert.That(result.Results, Has.Count.EqualTo(4));
+        Assert.That(result.Results[0].Version, Is.EqualTo("2022.3.10f1")); // Newest
+        Assert.That(result.Results[3].Version, Is.EqualTo("2022.3.5f1")); // Oldest
     }
 
     [Test]
-    public async Task GetReleases_FilterByStream_ReturnsCorrectReleases()
+    public async Task GetUnityReleases_OrderAsc_ReturnsReleasesInAscendingOrder()
     {
-        // Arrange
-        _mockClient.ReleasesToReturn = CreateTestData();
-
-        // Act
-        var result = await _tool.GetReleases(stream: "LTS");
-
-        // Assert
-        Assert.That(result, Has.Count.EqualTo(2));
-        Assert.That(result.All(r => r.Stream == "LTS"), Is.True);
+        var result = await _tool.GetUnityReleases(order: "RELEASE_DATE_ASC");
+        Assert.That(result.Total, Is.EqualTo(4));
+        Assert.That(result.Results, Has.Count.EqualTo(4));
+        Assert.That(result.Results[0].Version, Is.EqualTo("2022.3.5f1")); // Oldest
+        Assert.That(result.Results[3].Version, Is.EqualTo("2022.3.10f1")); // Newest
     }
 
     [Test]
-    public async Task GetReleases_FilterByVersion_ReturnsCorrectReleases()
+    public async Task GetUnityReleases_FilterBySingleStream_ReturnsCorrectReleases()
     {
-        // Arrange
-        _mockClient.ReleasesToReturn = CreateTestData();
-
-        // Act
-        var result = await _tool.GetReleases(version: "2022.3");
-
-        // Assert
-        Assert.That(result, Has.Count.EqualTo(2));
-        Assert.That(result.All(r => r.Version.StartsWith("2022.3")), Is.True);
+        var result = await _tool.GetUnityReleases(stream: new[] { "LTS" });
+        Assert.That(result.Total, Is.EqualTo(2));
+        Assert.That(result.Results.All(r => r.Stream == "LTS"), Is.True);
     }
 
     [Test]
-    public void GetReleases_NoResults_ThrowsException()
+    public async Task GetUnityReleases_FilterByMultipleStreams_ReturnsCorrectReleases()
     {
-        // Arrange
+        var result = await _tool.GetUnityReleases(stream: new[] { "LTS", "BETA" });
+        Assert.That(result.Total, Is.EqualTo(3));
+        Assert.That(result.Results.All(r => r.Stream == "LTS" || r.Stream == "BETA"), Is.True);
+    }
+
+    [Test]
+    public async Task GetUnityReleases_FilterByVersion_ReturnsCorrectReleases()
+    {
+        var result = await _tool.GetUnityReleases(version: "2022.3");
+        Assert.That(result.Total, Is.EqualTo(2));
+        Assert.That(result.Results.All(r => r.Version.StartsWith("2022.3")), Is.True);
+    }
+
+    [Test]
+    public async Task GetUnityReleases_FilterByPlatform_ReturnsCorrectReleases()
+    {
+        var result = await _tool.GetUnityReleases(platform: new[] { "LINUX" });
+        Assert.That(result.Total, Is.EqualTo(1));
+        Assert.That(result.Results[0].Version, Is.EqualTo("2023.1.0a20"));
+    }
+
+    [Test]
+    public async Task GetUnityReleases_FilterByMultiplePlatforms_ReturnsCorrectReleases()
+    {
+        var result = await _tool.GetUnityReleases(platform: new[] { "LINUX", "MAC_OS" });
+        Assert.That(result.Total, Is.EqualTo(3)); // 2022.3.5f1 (MAC_OS), 2023.1.0a20 (LINUX), 2022.3.10f1 (MAC_OS)
+    }
+
+    [Test]
+    public async Task GetUnityReleases_FilterByArchitecture_ReturnsCorrectReleases()
+    {
+        var result = await _tool.GetUnityReleases(architecture: new[] { "ARM64" });
+        Assert.That(result.Total, Is.EqualTo(2));
+        Assert.That(result.Results.Any(r => r.Version == "2023.2.0b1"), Is.True);
+        Assert.That(result.Results.Any(r => r.Version == "2022.3.10f1"), Is.True);
+    }
+
+    [Test]
+    public async Task GetUnityReleases_CombinedFilters_ReturnsCorrectReleases()
+    {
+        var result = await _tool.GetUnityReleases(stream: new[] {"LTS"}, platform: new[] {"WINDOWS"});
+        Assert.That(result.Total, Is.EqualTo(1));
+        Assert.That(result.Results[0].Version, Is.EqualTo("2022.3.5f1"));
+    }
+
+    [Test]
+    public async Task GetUnityReleases_Pagination_LimitWorks()
+    {
+        var result = await _tool.GetUnityReleases(limit: 2);
+        Assert.That(result.Total, Is.EqualTo(4));
+        Assert.That(result.Results, Has.Count.EqualTo(2));
+        Assert.That(result.Results[0].Version, Is.EqualTo("2022.3.10f1"));
+        Assert.That(result.Results[1].Version, Is.EqualTo("2023.2.0b1"));
+    }
+
+    [Test]
+    public async Task GetUnityReleases_Pagination_OffsetWorks()
+    {
+        var result = await _tool.GetUnityReleases(offset: 2, limit: 2);
+        Assert.That(result.Total, Is.EqualTo(4));
+        Assert.That(result.Results, Has.Count.EqualTo(2));
+        Assert.That(result.Results[0].Version, Is.EqualTo("2023.1.0a20"));
+        Assert.That(result.Results[1].Version, Is.EqualTo("2022.3.5f1"));
+    }
+
+    [Test]
+    public async Task GetUnityReleases_NoResults_ReturnsEmptyConnection()
+    {
         _mockClient.ReleasesToReturn = new List<UnityRelease>();
-
-        // Act & Assert
-        var ex = Assert.ThrowsAsync<ToolExecutionException>(async () => await _tool.GetReleases());
-        Assert.That(ex.Message, Is.EqualTo("No releases found matching the specified criteria."));
+        var result = await _tool.GetUnityReleases();
+        Assert.That(result.Total, Is.EqualTo(0));
+        Assert.That(result.Results, Is.Empty);
     }
 
     [Test]
-    public async Task GetLatestLtsRelease_FindsCorrectRelease()
+    public async Task GetUnityReleaseNotesContent_ValidVersion_ReturnsContent()
     {
         // Arrange
-        _mockClient.ReleasesToReturn = CreateTestData();
+        const string testVersion = "2022.3.5f1";
+        const string testUrl = "http://lts.url";
+        const string expectedContent = "## Release Notes\n\n- Fixed everything.";
+        _mockClient.PageContentToReturn[testUrl] = expectedContent;
 
         // Act
-        var release = await _tool.GetLatestLtsRelease();
+        var result = await _tool.GetUnityReleaseNotesContent(testVersion);
 
         // Assert
-        Assert.That(release, Is.Not.Null);
-        Assert.That(release.Version, Is.EqualTo("2022.3.10f1"));
-        Assert.That(release.Stream, Is.EqualTo("LTS"));
+        Assert.That(result, Is.EqualTo(expectedContent));
     }
 
     [Test]
-    public void GetLatestLtsRelease_NoLtsReleases_ThrowsException()
+    public async Task GetUnityReleaseNotesContent_VersionNotFound_ReturnsError()
+    {
+        // Act
+        var result = await _tool.GetUnityReleaseNotesContent("2000.1.1f1");
+
+        // Assert
+        Assert.That(result, Is.EqualTo("Error: Unity version '2000.1.1f1' not found."));
+    }
+
+    [Test]
+    public async Task GetUnityReleaseNotesContent_UrlMissing_ReturnsError()
     {
         // Arrange
-        _mockClient.ReleasesToReturn = new List<UnityRelease>
+        var releaseToModify = _mockClient.ReleasesToReturn?.First(r => r.Version == "2022.3.5f1");
+        if (releaseToModify != null)
         {
-            new()
-            {
-                Version = "2023.1.0a20",
-                Stream = "ALPHA",
-                ReleaseNotes = new UnityReleaseNotes { Url = "http://alpha.url", Type = "MD" },
-                Downloads = new List<UnityReleaseDownload>(),
-                SkuFamily = "CLASSIC",
-                UnityHubDeepLink = "unityhub://2023.1.0a20/67890",
-                ShortRevision = "67890",
-                ThirdPartyNotices = new List<UnityReleaseThirdPartyNotice>()
-            }
-        };
+            releaseToModify.ReleaseNotes = new UnityReleaseNotes { Url = "", Type = "MD" };
+        }
 
-        // Act & Assert
-        var ex = Assert.ThrowsAsync<ToolExecutionException>(async () => await _tool.GetLatestLtsRelease());
-        Assert.That(ex.Message, Is.EqualTo("Could not find the latest LTS release."));
+        // Act
+        var result = await _tool.GetUnityReleaseNotesContent("2022.3.5f1");
+
+        // Assert
+        Assert.That(result, Is.EqualTo("Error: No release notes URL found for version '2022.3.5f1'."));
     }
 }
