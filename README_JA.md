@@ -1,6 +1,43 @@
+[Read this in English](./README.md)
+
 # Unityリリースノート MCPサーバー
 
 このプロジェクトは、公式のUnity Release APIに基づき、Unityエディターのリリースに関する情報を取得・提供するために設計された、C#製のMCP (Model Context Protocol) サーバーです。
+
+## 目次
+
+- [はじめに](#はじめに)
+  - [前提条件](#前提条件)
+  - [インストールと実行](#インストールと実行)
+- [機能](#機能)
+- [使用方法](#使用方法)
+  - [`getUnityReleases`](#getunityreleases)
+  - [`getUnityReleaseNotesContent`](#getunityreleasenotescontent)
+- [開発](#開発)
+  - [アーキテクチャ](#アーキテクチャ)
+  - [テスト](#テスト)
+
+## はじめに
+
+このセクションでは、プロジェクトをローカルマシンでセットアップして実行するための手順を説明します。
+
+### 前提条件
+
+- [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+
+### インストールと実行
+
+1. **リポジトリをクローンします:**
+   ```sh
+   git clone https://github.com/hanachiru/UnityReleaseNoteMCP.git
+   cd UnityReleaseNoteMCP
+   ```
+
+2. **サーバーを実行します:**
+   サーバーが起動し、標準入力からのMCPリクエストを待ち受け、標準出力に応答を送信します。
+   ```sh
+   dotnet run --project src/UnityReleaseNoteMCP
+   ```
 
 ## 機能
 
@@ -13,23 +50,69 @@
 
 ## 使用方法
 
-このサーバーは、以下のメソッドを持つ `UnityReleaseTool` を公開しています。失敗した場合、すべてのメソッドは `ToolExecutionException` をスローします。
+このサーバーは、リリースデータを取得するための主要な2つのメソッドを持つ `UnityReleaseTool` を公開しています。失敗した場合、すべてのメソッドは `ToolExecutionException` をスローします。
 
-### `GetReleases(version, stream)`
+### `getUnityReleases`
 
-`UnityRelease` オブジェクトのリストを取得します。バージョンやストリームでフィルタリングできます。
+ページネーション、フィルタリング、ソートが適用されたUnityリリースのリストを取得します。
 
--   **`version` (string, optional)**: 完全または部分的なバージョン文字列でフィルタリングします（例: `"2022.3"`, `"2023.1.0a22"`）。
--   **`stream` (string, optional)**: リリースストリームでフィルタリングします。`"LTS"`, `"BETA"`, `"ALPHA"`, `"TECH"` が指定可能です。
--   **戻り値**: `Task<List<UnityRelease>>`
+**パラメータ:**
 
-`UnityRelease` オブジェクトは、バージョン、リリース日、ストリーム、ダウンロードリストなど、APIから提供される完全なデータを含むリッチモデルです。
+| 名前         | 型                  | 説明                                                                     | デフォルト          |
+|--------------|---------------------|--------------------------------------------------------------------------|---------------------|
+| `limit`      | `int`               | ページごとに返される結果の数を制限します（最小1、最大25）。              | `10`                |
+| `offset`     | `int`               | 結果の最初の`n`要素をオフセットします。                                  | `0`                 |
+| `order`      | `string`            | リリース日で結果をソートします。`RELEASE_DATE_ASC`または`RELEASE_DATE_DESC`が指定可能です。 | `RELEASE_DATE_DESC` |
+| `stream`     | `IReadOnlyList<string>` | リリースストリームでフィルタリングします（例: `["LTS", "BETA"]`）。         | `null`（すべてのストリーム） |
+| `platform`   | `IReadOnlyList<string>` | ダウンロードプラットフォームでフィルタリングします（例: `["Windows", "Mac"]`）。 | `null`（すべてのプラットフォーム）|
+| `architecture`| `IReadOnlyList<string>` | ダウンロードアーキテクチャでフィルタリングします（例: `["X64"]`）。          | `null`（すべてのアーキテクチャ）|
+| `version`    | `string`            | バージョン文字列の全文検索でフィルタリングします。                       | `null`              |
 
-### `GetLatestLtsRelease()`
+**戻り値:** `Task<UnityReleaseOffsetConnection>`
 
-最新の公式LTS（長期サポート）リリースを見つけ、その完全な `UnityRelease` オブジェクトを返します。
+ページネーションされた結果（`Results`）、総数（`Total`）、`limit`、および`offset`を含むオブジェクト。
 
--   **戻り値**: `Task<UnityRelease>`
+**MCPリクエストの例:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "getUnityReleases",
+  "params": {
+    "limit": 2,
+    "stream": ["LTS"],
+    "version": "2022.3"
+  }
+}
+```
+
+### `getUnityReleaseNotesContent`
+
+特定のUnityバージョンのリリースノートのコンテンツを取得します。
+
+**パラメータ:**
+
+| 名前      | 型       | 説明                                                              |
+|-----------|----------|-------------------------------------------------------------------|
+| `version` | `string` | Unityリリースの正確なバージョン文字列（例: `'2022.3.10f1'`）。 |
+
+**戻り値:** `Task<string>`
+
+リリースノートの生のMarkdownコンテンツ。
+
+**MCPリクエストの例:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "getUnityReleaseNotesContent",
+  "params": {
+    "version": "2022.3.10f1"
+  }
+}
+```
 
 ## 開発
 

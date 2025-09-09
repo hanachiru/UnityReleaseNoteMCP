@@ -1,6 +1,42 @@
+[日本語版はこちら](./README_JA.md)
+
 # Unity Release Note MCP Server
 
 This project is a C# MCP (Model Context Protocol) server designed to fetch and provide information about Unity Editor releases, based on the official Unity Release API.
+
+## Table of Contents
+
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation & Running](#installation--running)
+- [Usage](#usage)
+  - [`getUnityReleases`](#getunityreleases)
+  - [`getUnityReleaseNotesContent`](#getunityreleasenotescontent)
+- [Development](#development)
+  - [Architecture](#architecture)
+  - [Testing](#testing)
+
+## Getting Started
+
+Follow these instructions to get the project up and running on your local machine.
+
+### Prerequisites
+
+- [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+
+### Installation & Running
+
+1. **Clone the repository:**
+   ```sh
+   git clone https://github.com/hanachiru/UnityReleaseNoteMCP.git
+   cd UnityReleaseNoteMCP
+   ```
+
+2. **Run the server:**
+   The server will start, listen for MCP requests from standard input, and send responses to standard output.
+   ```sh
+   dotnet run --project src/UnityReleaseNoteMCP
+   ```
 
 ## Features
 
@@ -13,23 +49,69 @@ This project is a C# MCP (Model Context Protocol) server designed to fetch and p
 
 ## Usage
 
-The server exposes a `UnityReleaseTool` with the following methods. On failure, all methods throw a `ToolExecutionException`.
+The server exposes a `UnityReleaseTool` with two primary methods for fetching release data. On failure, all methods throw a `ToolExecutionException`.
 
-### `GetReleases(version, stream)`
+### `getUnityReleases`
 
-Retrieves a list of `UnityRelease` objects, which can be filtered by version and/or stream.
+Retrieves a paginated, filtered, and ordered list of Unity releases.
 
--   **`version` (string, optional)**: Filter by a full or partial version string (e.g., `"2022.3"`, `"2023.1.0a22"`).
--   **`stream` (string, optional)**: Filter by release stream. Can be `"LTS"`, `"BETA"`, `"ALPHA"`, or `"TECH"`.
--   **Returns**: `Task<List<UnityRelease>>`
+**Parameters:**
 
-The `UnityRelease` object is a rich model containing the full data provided by the API, including version, release date, stream, and a list of downloads.
+| Name         | Type                | Description                                                              | Default             |
+|--------------|---------------------|--------------------------------------------------------------------------|---------------------|
+| `limit`      | `int`               | Limits the number of results returned per page (min 1, max 25).          | `10`                |
+| `offset`     | `int`               | Offsets the first `n` elements from the results.                         | `0`                 |
+| `order`      | `string`            | Orders results by release date. Can be `RELEASE_DATE_ASC` or `RELEASE_DATE_DESC`. | `RELEASE_DATE_DESC` |
+| `stream`     | `IReadOnlyList<string>` | Filters by release stream (e.g., `["LTS", "BETA"]`).                     | `null` (all streams) |
+| `platform`   | `IReadOnlyList<string>` | Filters by download platform (e.g., `["Windows", "Mac"]`).               | `null` (all platforms)|
+| `architecture`| `IReadOnlyList<string>` | Filters by download architecture (e.g., `["X64"]`).                      | `null` (all architectures)|
+| `version`    | `string`            | Filters by a full-text search on the version string.                     | `null`              |
 
-### `GetLatestLtsRelease()`
+**Returns:** `Task<UnityReleaseOffsetConnection>`
 
-Finds the latest official LTS (Long-Term Support) release and returns the full `UnityRelease` object.
+An object containing the paginated results (`Results`), total count (`Total`), `limit`, and `offset`.
 
--   **Returns**: `Task<UnityRelease>`
+**Example MCP Request:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "getUnityReleases",
+  "params": {
+    "limit": 2,
+    "stream": ["LTS"],
+    "version": "2022.3"
+  }
+}
+```
+
+### `getUnityReleaseNotesContent`
+
+Get the content of the release notes for a specific Unity version.
+
+**Parameters:**
+
+| Name      | Type     | Description                                               |
+|-----------|----------|-----------------------------------------------------------|
+| `version` | `string` | The exact version string of the Unity Release (e.g., `'2022.3.10f1'`). |
+
+**Returns:** `Task<string>`
+
+The raw Markdown content of the release notes.
+
+**Example MCP Request:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "getUnityReleaseNotesContent",
+  "params": {
+    "version": "2022.3.10f1"
+  }
+}
+```
 
 ## Development
 
